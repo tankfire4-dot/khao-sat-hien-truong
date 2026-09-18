@@ -1,0 +1,1219 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#404042">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<link rel="apple-touch-icon" href="icon.svg">
+<title>Khảo sát hiện trường</title>
+<style>
+  :root {
+    --paper: #f3f3f1; --surface: #ffffff;
+    --ink: #212124; --ink-2: #6b6b71; --ink-3: #9d9da3; --hair: #e9e8e5;
+    --charcoal: #26262a; --accent: #38618c; --accent-soft: #eef2f7;
+    --good: #2f855a; --warn: #b08328; --bad: #bf5340;
+    --shadow: 0 1px 2px rgba(24,24,24,.05), 0 3px 10px rgba(24,24,24,.05);
+    --shadow-sm: 0 1px 2px rgba(24,24,24,.06);
+    --r: 14px; --mono: ui-monospace, "SF Mono", "Cascadia Code", Consolas, "Roboto Mono", monospace;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; }
+  body {
+    font: 15.5px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    color: var(--ink); background: var(--paper);
+    max-width: 480px; margin: 0 auto; -webkit-font-smoothing: antialiased;
+    min-height: 100dvh; display: flex; flex-direction: column;
+  }
+  body.fit { height: 100dvh; overflow: hidden; }
+  body.fit main { min-height: 0; overflow: hidden; display: flex; flex-direction: column; padding-bottom: 12px; }
+  body.fit .plan { flex: 1 1 auto; height: auto; min-height: 120px; margin-bottom: 8px; }
+  .ctl { flex: 0 0 auto; }
+  .hint { font-size: 12px; color: var(--ink-2); text-align: center; line-height: 1.4; margin: 2px 6px 6px; }
+  header {
+    position: sticky; top: 0; z-index: 5; flex: 0 0 auto; background: var(--charcoal); color: #fff;
+    padding: 14px 18px; display: flex; align-items: center; gap: 12px;
+    box-shadow: 0 1px 0 rgba(0,0,0,.06), 0 2px 14px rgba(0,0,0,.09);
+  }
+  header .back { font-size: 24px; line-height: 1; cursor: pointer; padding: 0 4px; margin-left: -4px; color: #d7d7d9; }
+  header h1 { font-size: 15.5px; font-weight: 600; margin: 0; flex: 1; letter-spacing: .3px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  main { flex: 1 1 auto; padding: 12px 14px 40px; }
+  .card { background: var(--surface); border-radius: var(--r); padding: 14px; margin-bottom: 12px; box-shadow: var(--shadow); }
+  .muted { color: var(--ink-2); }
+  .row { display: flex; gap: 8px; align-items: center; }
+  h2 { font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--ink-3); margin: 6px 2px 12px; }
+  h3 { font-size: 12.5px; font-weight: 700; letter-spacing: .3px; color: var(--ink-2); margin: 2px 2px 10px; text-transform: uppercase; }
+  label { display: block; font-size: 12.5px; color: var(--ink-2); margin: 12px 2px 5px; font-weight: 500; }
+  input[type=text], input[type=number], input[type=date] {
+    width: 100%; padding: 13px; border: 1px solid var(--hair); border-radius: 11px; font: inherit; background: #fafafa; color: var(--ink);
+  }
+  input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); background: #fff; }
+  button { font: inherit; cursor: pointer; border: none; border-radius: 12px; transition: transform .04s ease, background .15s ease; }
+  button:active { transform: translateY(1px); }
+  .btn { padding: 14px 16px; background: var(--charcoal); color: #fff; font-weight: 600; width: 100%; letter-spacing: .2px; }
+  .btn.accent { background: var(--accent); }
+  .btn.ghost { background: #e9e8e5; color: var(--ink); }
+  .btn.ghost:active { background: #e0dfdb; }
+  .btn.small { width: auto; padding: 10px 14px; font-size: 13px; }
+  .btn.danger { background: #f6e5e1; color: var(--bad); }
+  .btn[disabled] { opacity: .35; }
+  .list-item { display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    padding: 15px 16px; border-radius: var(--r); margin-bottom: 10px; background: var(--surface); box-shadow: var(--shadow-sm); cursor: pointer; }
+  .list-item:active { background: #fbfbfa; }
+  .list-item .t { font-weight: 600; letter-spacing: .1px; }
+  .list-item .s { font-size: 12.5px; color: var(--ink-3); margin-top: 3px; }
+  .chev { color: var(--ink-3); font-size: 20px; }
+  .empty { text-align: center; color: var(--ink-3); padding: 26px 14px; line-height: 1.7; }
+
+  .plan { width: 100%; height: 55vh; min-height: 300px; max-height: 520px; background: #fbfbfa;
+    border-radius: var(--r); display: block; box-shadow: var(--shadow-sm); touch-action: none; }
+  .elev { width: 100%; aspect-ratio: 6 / 5; max-height: 56vh; background: #fbfbfa; border-radius: var(--r); display: block; box-shadow: var(--shadow-sm); margin-bottom: 12px; }
+  .banner { padding: 11px 13px; border-radius: 12px; font-weight: 500; margin: 10px 0; font-size: 13.5px; line-height: 1.45; }
+  .banner.info { background: var(--accent-soft); color: #2c516f; }
+  .banner.warn { background: #f7efdc; color: #866321; }
+  .banner.bad { background: #f6e5e1; color: #9c3d2b; }
+  .banner b { font-weight: 700; }
+  .status { display: flex; align-items: center; gap: 12px; padding: 12px 15px; border-radius: var(--r);
+    color: #fff; font-weight: 600; margin: 10px 0; box-shadow: var(--shadow-sm); }
+  .status .n { font-size: 24px; font-weight: 700; font-family: var(--mono); letter-spacing: -.5px; }
+  .status .lbl { font-size: 13.5px; opacity: .95; }
+
+  .display { text-align: center; font-size: 22px; font-weight: 600; font-family: var(--mono); padding: 7px;
+    border-radius: 10px; background: #f6f6f4; margin-bottom: 7px; color: var(--ink); }
+  .display .u { font-size: 13px; color: var(--ink-3); font-weight: 500; margin-left: 5px; font-family: system-ui; }
+  .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 7px; }
+  .keypad button { padding: 9px 0; font-size: 18px; font-weight: 500; font-family: var(--mono);
+    background: var(--surface); box-shadow: var(--shadow-sm); color: var(--ink); }
+  .keypad button:active { background: #f1f1ef; }
+  .toolrow { display: flex; gap: 8px; }
+  .toolrow > * { flex: 1; }
+  .toolrow .btn { padding: 11px 12px; font-size: 14px; }
+  .dpad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; max-width: 178px; margin: 8px auto 10px; }
+  .dpad button { aspect-ratio: 1; font-size: 21px; font-weight: 700; background: var(--surface);
+    box-shadow: var(--shadow-sm); color: var(--ink); border-radius: 12px; touch-action: none; user-select: none; -webkit-user-select: none; }
+  .dpad button.on { background: var(--accent); color: #fff; }
+  .dpad .sp { visibility: hidden; }
+
+  /* Tab bar trong 1 phòng */
+  .tabbar { display: flex; gap: 6px; background: #e9e8e5; padding: 4px; border-radius: 13px; margin-bottom: 14px; }
+  .tabbar button { flex: 1; padding: 10px 4px; font-size: 12.5px; font-weight: 600; background: transparent; color: var(--ink-2); border-radius: 10px; }
+  .tabbar button.on { background: var(--surface); color: var(--ink); box-shadow: var(--shadow-sm); }
+
+  /* Đồ vật (chip) */
+  .obj { display: flex; align-items: center; gap: 10px; padding: 12px 13px; border-radius: 12px; background: var(--surface);
+    box-shadow: var(--shadow-sm); margin-bottom: 8px; cursor: pointer; }
+  .obj:active { background: #fbfbfa; }
+  .obj .ic { font-size: 18px; width: 24px; text-align: center; }
+  .obj .t { font-weight: 600; font-size: 14px; }
+  .obj .s { font-size: 12px; color: var(--ink-3); margin-top: 2px; }
+  .obj .warnDot { color: var(--warn); font-size: 12px; }
+  .picker { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; }
+  .picker button { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 9px 3px;
+    background: var(--surface); box-shadow: var(--shadow-sm); color: var(--ink); font-size: 10.5px; font-weight: 600; border-radius: 11px; line-height: 1.15; }
+  .picker button .ic { font-size: 17px; }
+  .thumbs { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .thumbs .tm { position: relative; }
+  .thumbs img { width: 68px; height: 68px; object-fit: cover; border-radius: 10px; box-shadow: var(--shadow-sm); }
+  .thumbs .x { position: absolute; top: -6px; right: -6px; width: 22px; height: 22px; border-radius: 50%;
+    background: var(--bad); color: #fff; font-size: 13px; line-height: 22px; text-align: center; box-shadow: var(--shadow-sm); }
+  .chk { display: flex; align-items: flex-start; gap: 10px; padding: 11px 4px; border-bottom: 1px solid var(--hair); font-size: 13.5px; }
+  .chk:last-child { border-bottom: none; }
+  .chk .m { font-size: 15px; line-height: 1.4; }
+  .chk .lbl { font-weight: 600; }
+  .chk .dt { color: var(--ink-2); font-size: 12.5px; }
+  .chk.ok .m { color: var(--good); }
+  .chk.warn .m { color: var(--warn); }
+  .seg { display: flex; gap: 6px; }
+  .seg select { flex: 1; padding: 12px; border: 1px solid var(--hair); border-radius: 11px; font: inherit; background: #fafafa; }
+</style>
+</head>
+<body>
+<header>
+  <span class="back" id="backBtn" style="display:none" onclick="App.back()">‹</span>
+  <h1 id="title">Khảo sát hiện trường</h1>
+</header>
+<main id="app"></main>
+
+<script src="js/geometry.js"></script>
+<script src="js/dxf.js"></script>
+<script>
+var App = (function () {
+  'use strict';
+  var KEY = 'khao-sat-v0';
+  var G = window.Geometry;
+  var VW = 340, VH = 320;          // khung mặt bằng
+  var EW = 360, EH = 300;          // khung mặt đứng tường
+  var state = { screen: 'home', projectId: null, roomId: null, tab: 'plan',
+    selEdge: null, pendingVal: '', wallIdx: null, objId: null, objKind: null, ceilPlace: null, addOpen: false,
+    zoneMode: false, zonePts: [], zoneSel: null, zoneTwo: false, zoneEdgeSel: null,
+    zActive: 0, zSlot: 0, // chọn mốc bằng cách CHẠM góc/cạnh trên hình (mốc đang chờ = zSlot)
+    // zAnc: 2 GÓC MẢNG. Mỗi góc = 2 số đo (m), mỗi số đo tham chiếu 'corner' (góc phòng) hoặc
+    // 'edge' (cạnh tường, d=0 nghĩa nằm trên cạnh); side chọn 1 trong 2 nghiệm giao.
+    zAnc: [
+      { m: [{ ref: 'corner', idx: 0, d: '' }, { ref: 'corner', idx: 1, d: '' }], side: 1 },
+      { m: [{ ref: 'corner', idx: 0, d: '' }, { ref: 'corner', idx: 1, d: '' }], side: 1 }
+    ] };
+  var snake = { legDir: null, legLen: 0, activeDir: null, raf: null, last: 0, mode: 'sketch' };
+  var SDIR = { U: { x: 0, y: -1 }, D: { x: 0, y: 1 }, L: { x: -1, y: 0 }, R: { x: 1, y: 0 } };
+  var OPP = { U: 'D', D: 'U', L: 'R', R: 'L' };
+  var SPEED = 135;
+  var data = load();
+
+  // Danh mục đồ vật đặt trên TƯỜNG (§20). fields = trường số cần nhập.
+  var KINDS = {
+    outlet: { ten: 'Ổ điện', ic: '▣', f: ['fromA', 'w', 'oh', 'h', 'toB'] },
+    switchx: { ten: 'Công tắc', ic: '⊟', f: ['fromA', 'w', 'oh', 'h'] },
+    data: { ten: 'Ổ mạng', ic: '▦', f: ['fromA', 'w', 'oh', 'h'] },
+    tv: { ten: 'Đầu TV', ic: '▷', f: ['fromA', 'w', 'oh', 'h'] },
+    water: { ten: 'Cấp nước', ic: '◉', f: ['fromA', 'w', 'oh', 'h'] },
+    drain: { ten: 'Thoát nước', ic: '◍', f: ['fromA', 'w', 'oh', 'h'] },
+    ac: { ten: 'Máy lạnh', ic: '❄', f: ['fromA', 'w', 'oh', 'h'] },
+    door: { ten: 'Cửa', ic: '🚪', f: ['fromA', 'w', 'doorH'], floor: true },
+    window: { ten: 'Cửa sổ', ic: '⊞', f: ['fromA', 'w', 'sill', 'head'] },
+    niche: { ten: 'Hốc', ic: '▭', f: ['fromA', 'w', 'bottom', 'top'] },
+    panel: { ten: 'Tủ điện', ic: '▤', f: ['fromA', 'w', 'oh', 'h'] },
+    camera: { ten: 'Camera', ic: '◎', f: ['fromA', 'w', 'oh', 'h'] },
+    wlight: { ten: 'Đèn tường', ic: '☀', f: ['fromA', 'w', 'oh', 'h'] },
+    beam: { ten: 'Dầm', ic: '▬', f: ['w', 'bottom'], ceil: true }
+  };
+  // Đồ vật trên TRẦN (§29). Chỉ đánh dấu vị trí + ghi chú (beam có thêm số).
+  var CKINDS = {
+    beam: { ten: 'Dầm', ic: '▬', hasBottom: true },
+    clight: { ten: 'Đèn', ic: '☀' },
+    cassette: { ten: 'Máy lạnh', ic: '❄' },
+    vent: { ten: 'Miệng gió', ic: '≋' },
+    sprinkler: { ten: 'Sprinkler', ic: '◉' },
+    smoke: { ten: 'Báo cháy', ic: '◎' },
+    fan: { ten: 'Quạt', ic: '✳' },
+    curtain: { ten: 'Rèm âm', ic: '▤' },
+    techbox: { ten: 'Hộp KT', ic: '▢' },
+    powerpt: { ten: 'Chờ điện', ic: '⚡' }
+  };
+  var FIELD = {
+    fromA: { lbl: 'Góc A → mép trái vật (mm)', ph: '850' },
+    toB: { lbl: 'Mép phải vật → góc B — để kiểm (tuỳ)', ph: '2380' },
+    h: { lbl: 'Sàn → đáy vật (mm)', ph: '350' },
+    w: { lbl: 'Rộng vật (mm)', ph: '120' },
+    oh: { lbl: 'Cao vật (mm)', ph: '120' },
+    doorH: { lbl: 'Cao cửa (mm)', ph: '2300' },
+    sill: { lbl: 'Đáy cửa sổ cách sàn (mm)', ph: '900' },
+    head: { lbl: 'Đỉnh cửa sổ cách sàn (mm)', ph: '2200' },
+    bottom: { lbl: 'Đáy (mm)', ph: '2450' },
+    top: { lbl: 'Đỉnh (mm)', ph: '2600' }
+  };
+
+  function load() { try { return JSON.parse(localStorage.getItem(KEY)) || { projects: [] }; } catch (e) { return { projects: [] }; } }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(data)); } catch (e) { alert('Không lưu được (bộ nhớ đầy hoặc bị chặn — ảnh chiếm nhiều chỗ). Nhớ Xuất JSON để giữ dữ liệu.'); } }
+  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function today() { return new Date().toISOString().slice(0, 10); }
+  function proj() { return data.projects.find(function (p) { return p.id === state.projectId; }); }
+  function room() { var p = proj(); return p && p.rooms.find(function (r) { return r.id === state.roomId; }); }
+  function curCeil() { var r = room(); return r && (r.objects || []).find(function (o) { return o.id === state.objId; }); }
+  // Neo đang định nghĩa (nhận cú CHẠM góc/cạnh): của vùng (zone mode) hoặc của đồ trần đang sửa.
+  function activeAnchor() {
+    if (state.zoneMode) return state.zAnc[state.zActive];
+    var o = curCeil(); return (o && o.ceiling && o.anchor) ? o.anchor : null;
+  }
+  function num(v) { var n = parseFloat(v); return isFinite(n) ? n : null; }
+  function letter(i) { return String.fromCharCode(65 + i); }
+
+  function go(screen) { state.screen = screen; render(); window.scrollTo(0, 0); }
+  function back() {
+    stopSnake();
+    if (state.screen === 'room') {
+      if (state.tab === 'walls' && state.wallIdx != null) { state.wallIdx = null; state.objId = null; state.objKind = null; render(); return; }
+      go('project');
+    } else if (state.screen === 'project' || state.screen === 'newproject') { state.projectId = null; go('home'); }
+    else go('home');
+  }
+
+  // ---------- render dispatch ----------
+  function render() {
+    var el = document.getElementById('app');
+    document.getElementById('backBtn').style.display = state.screen === 'home' ? 'none' : 'block';
+    var rr = room();
+    document.body.classList.toggle('fit', state.screen === 'room' && !!rr && rr.phase === 'sketch');
+    if (state.screen === 'home') el.innerHTML = viewHome();
+    else if (state.screen === 'newproject') el.innerHTML = viewNewProject();
+    else if (state.screen === 'project') el.innerHTML = viewProject();
+    else if (state.screen === 'room') { el.innerHTML = viewRoom(); afterRoom(); }
+    setTitle();
+  }
+  function setTitle() {
+    var t = 'Khảo sát hiện trường';
+    if (state.screen === 'newproject') t = 'Công trình mới';
+    else if (state.screen === 'project' && proj()) t = proj().name;
+    else if (state.screen === 'room' && room()) {
+      t = room().name;
+      if (state.tab === 'walls' && state.wallIdx != null) t = room().name + ' · Tường ' + wallName(state.wallIdx);
+    }
+    document.getElementById('title').textContent = t;
+  }
+  function afterRoom() {
+    var r = room(); if (!r) return;
+    if (r.phase === 'sketch') { snake.mode = 'sketch'; drawPlan(); return; }
+    if (state.tab === 'plan') drawPlan();
+    else if (state.tab === 'walls') { if (state.wallIdx == null) drawPlan(); else drawElev(state.wallIdx); }
+    else if (state.tab === 'ceiling') { snake.mode = state.zoneMode ? 'zone' : 'sketch'; drawCeiling(); }
+  }
+
+  // ---------- home / project ----------
+  function viewHome() {
+    var items = data.projects.map(function (p) {
+      return '<div class="list-item" onclick="App.openProject(\'' + p.id + '\')">' +
+        '<div><div class="t">' + esc(p.name) + '</div>' +
+        '<div class="s">' + esc(p.customer || '') + (p.customer && p.rooms.length ? ' · ' : '') +
+        p.rooms.length + ' phòng · ' + esc(p.surveyDate || '') + '</div></div>' +
+        '<span class="chev">›</span></div>';
+    }).join('');
+    return '<h2>Công trình</h2>' +
+      (data.projects.length ? items : '<div class="empty">Chưa có công trình nào.<br>Bấm bên dưới để bắt đầu khảo sát.</div>') +
+      '<button class="btn accent" onclick="App.go(\'newproject\')">+ Tạo công trình mới</button>' +
+      '<div class="row" style="margin-top:14px;gap:8px">' +
+      '<button class="btn ghost small" style="flex:1" onclick="App.exportJSON()">Xuất JSON (sao lưu)</button>' +
+      '<button class="btn ghost small" style="flex:1" onclick="App.importJSON()">Nhập JSON</button></div>' +
+      '<p class="muted" style="font-size:12px;margin-top:10px">Dữ liệu lưu ngay trên máy này. Xuất JSON định kỳ để khỏi mất.</p>';
+  }
+  function viewNewProject() {
+    return '<div class="card">' +
+      '<label>Tên công trình *</label><input type="text" id="f-name" placeholder="VD: Căn hộ A1205">' +
+      '<label>Khách hàng</label><input type="text" id="f-customer">' +
+      '<label>Địa chỉ</label><input type="text" id="f-address">' +
+      '<label>Ngày khảo sát</label><input type="date" id="f-date" value="' + today() + '">' +
+      '<label>Người khảo sát</label><input type="text" id="f-surveyor">' +
+      '</div><button class="btn accent" onclick="App.createProject()">Bắt đầu khảo sát</button>';
+  }
+  function viewProject() {
+    var p = proj(); if (!p) return '';
+    var rooms = p.rooms.map(function (r) {
+      var st = roomStatus(r);
+      return '<div class="list-item" onclick="App.openRoom(\'' + r.id + '\')">' +
+        '<div><div class="t">' + esc(r.name) + '</div><div class="s" style="color:' + st.c + '">' + st.t + '</div></div>' +
+        '<span class="chev">›</span></div>';
+    }).join('');
+    return '<div class="card"><div class="muted" style="font-size:12px">' +
+      (p.address ? esc(p.address) + '<br>' : '') +
+      (p.customer ? 'KH: ' + esc(p.customer) + ' · ' : '') + esc(p.surveyDate || '') +
+      (p.surveyor ? ' · ' + esc(p.surveyor) : '') + '</div></div>' +
+      '<h2>Phòng</h2>' + (p.rooms.length ? rooms : '<div class="empty">Chưa có phòng.</div>') +
+      '<button class="btn accent" onclick="App.addRoom()">+ Thêm phòng</button>';
+  }
+  function roomStatus(r) {
+    if (!r.edges || r.edges.length === 0) return { t: 'Chưa vẽ hình', c: 'var(--ink-3)' };
+    var miss = G.missingCount(r.edges);
+    if (miss > 0) return { t: '⚠ Còn ' + miss + '/' + r.edges.length + ' cạnh chưa có số', c: 'var(--warn)' };
+    var res = G.rectilinearResidual(r.edges), b = G.closureBand(res);
+    return { t: '● ' + b.nhan + ' · lệch ' + Math.round(res) + 'mm', c: b.mau };
+  }
+
+  // ---------- room shell ----------
+  function viewRoom() {
+    var r = room(); if (!r) return '';
+    if (r.phase === 'sketch') return viewSketch(r);
+    var tab =
+      '<div class="tabbar">' +
+      tb('plan', 'Mặt bằng') + tb('walls', 'Tường') + tb('ceiling', 'Trần') + tb('check', 'Kiểm tra') +
+      '</div>';
+    var body;
+    if (state.tab === 'plan') body = tabPlan(r);
+    else if (state.tab === 'walls') body = (state.wallIdx == null ? tabWalls(r) : tabWallElev(r, state.wallIdx));
+    else if (state.tab === 'ceiling') body = tabCeiling(r);
+    else body = tabCheck(r);
+    return tab + body;
+  }
+  function tb(id, label) { return '<button class="' + (state.tab === id ? 'on' : '') + '" onclick="App.setTab(\'' + id + '\')">' + label + '</button>'; }
+
+  function viewSketch(r) {
+    var svg = planSvg();
+    function dbtn(d, sym) { return '<button onpointerdown="App.arrowDown(event,\'' + d + '\')" onpointerup="App.arrowUp()" onpointerleave="App.arrowUp()" onpointercancel="App.arrowUp()" oncontextmenu="return false">' + sym + '</button>'; }
+    var dpad = '<span class="sp"></span>' + dbtn('U', '↑') + '<span class="sp"></span>' +
+      dbtn('L', '←') + '<span class="sp"></span>' + dbtn('R', '→') +
+      '<span class="sp"></span>' + dbtn('D', '↓') + '<span class="sp"></span>';
+    return svg +
+      '<div class="ctl">' +
+      '<div class="hint">🐍 Chạm hình đặt điểm bắt đầu · giữ mũi tên cho rắn bò · mũi tên ngược = lùi sửa</div>' +
+      '<div class="dpad">' + dpad + '</div>' +
+      '<div class="toolrow">' +
+      '<button class="btn ghost" onclick="App.snakeUndo()">↩ Lùi</button>' +
+      '<button class="btn ghost" onclick="App.snakeClear()">Vẽ lại</button>' +
+      '<button class="btn accent" onclick="App.snakeClose()">Đóng hình ▸</button>' +
+      '</div></div>';
+  }
+  function planSvg() { return '<svg class="plan" id="plan" viewBox="0 0 ' + VW + ' ' + VH + '" preserveAspectRatio="xMidYMid meet" onpointerdown="App.planTap(event)"></svg>'; }
+
+  // ---------- TAB: Mặt bằng ----------
+  function tabPlan(r) {
+    var miss = G.missingCount(r.edges);
+    var statusHtml = miss > 0
+      ? '<div class="banner warn">⚠ Còn <b>' + miss + '/' + r.edges.length + '</b> cạnh chưa có số đo — chạm vào cạnh (nét đỏ) để nhập.</div>'
+      : (function () { var res = G.rectilinearResidual(r.edges), b = G.closureBand(res);
+          return '<div class="status" style="background:' + b.mau + '"><span class="n">' + Math.round(res) + 'mm</span><span class="lbl">Khép hình · ' + b.nhan + '</span></div>'; })();
+    var editor;
+    if (state.selEdge != null) {
+      var e = r.edges[state.selEdge];
+      editor =
+        '<div class="card"><div class="muted" style="font-size:12px;margin-bottom:6px">Cạnh ' + wallName(state.selEdge) + ' (' + (e.axis === 'H' ? 'ngang' : 'dọc') + ') — gõ số là hiện lên ngay. Xong thì chạm cạnh khác.</div>' +
+        '<div class="display">' + (state.pendingVal || '0') + '<span class="u">mm</span></div>' +
+        '<div class="keypad">' + ['7','8','9','4','5','6','1','2','3','0','.','⌫'].map(function (k) { return '<button onclick="App.key(\'' + k + '\')">' + k + '</button>'; }).join('') + '</div>' +
+        '<div class="toolrow">' +
+        '<button class="btn ghost" onclick="App.clearEdge()">Xoá số cạnh này</button>' +
+        '<button class="btn ghost" onclick="App.deselect()">Xong ✓</button></div></div>';
+    } else {
+      editor = '<div class="banner info">👆 Chạm một cạnh trên hình để nhập / sửa số đo.</div>';
+    }
+    return planSvg() + statusHtml + editor + diagCard(r) +
+      '<button class="btn ghost" onclick="App.backToSketch()">✎ Vẽ lại hình</button>';
+  }
+  function diagCard(r) {
+    if (G.missingCount(r.edges) > 0) return '';
+    r.diagonals = r.diagonals || [];
+    var opts = r.edges.map(function (_, i) { return '<option value="' + i + '">' + letter(i) + '</option>'; }).join('');
+    var rows = r.diagonals.map(function (d, i) {
+      var calc = G.cornerDistance(r.edges, d.from, d.to);
+      var meas = num(d.measured);
+      var line = letter(d.from) + '→' + letter(d.to) + ': hình ' + Math.round(calc) + 'mm';
+      var tag = '';
+      if (meas != null && calc != null) { var diff = Math.round(Math.abs(meas - calc));
+        line += ' · đo ' + meas + 'mm'; tag = ' <b style="color:' + (diff <= 15 ? 'var(--good)' : 'var(--bad)') + '">lệch ' + diff + 'mm</b>'; }
+      return '<div class="obj"><div class="ic">╲</div><div style="flex:1"><div class="t">' + line + tag + '</div></div>' +
+        '<button class="btn ghost small" onclick="App.delDiag(' + i + ')">✕</button></div>';
+    }).join('');
+    return '<div class="card"><h3>Đường chéo (kiểm thêm)</h3>' + (rows || '<div class="muted" style="font-size:12.5px;margin-bottom:8px">Đo laser 1 đường chéo giữa 2 góc để đối chiếu với hình.</div>') +
+      '<div class="seg" style="margin-top:8px"><select id="dg-from">' + opts + '</select>' +
+      '<select id="dg-to">' + opts + '</select>' +
+      '<input type="number" id="dg-m" placeholder="đo (mm)" style="flex:1.3"></div>' +
+      '<button class="btn ghost small" style="margin-top:8px" onclick="App.addDiag()">+ Thêm đường chéo</button></div>';
+  }
+
+  // ---------- TAB: Tường ----------
+  function wallName(i) { var n = room().edges.length; return letter(i) + '–' + letter((i + 1) % n); }
+  function wallObjs(r, i) { return (r.objects || []).filter(function (o) { return !o.ceiling && o.wall === i; }); }
+  function tabWalls(r) {
+    if (G.missingCount(r.edges) > 0) return '<div class="banner warn">Nhập đủ số các cạnh ở tab Mặt bằng trước, rồi mới xem mặt đứng từng tường.</div>';
+    var withObj = r.edges.filter(function (_, i) { return wallObjs(r, i).length; }).length;
+    return '<div class="banner info">Chạm <b>thẳng vào tường trên hình</b> để mở mặt đứng và đặt ổ điện, cửa, thiết bị… Tường <b style="color:var(--accent)">nét xanh</b> là đã có đồ.</div>' +
+      planSvg() +
+      (withObj ? '' : '<div class="muted" style="font-size:12.5px;text-align:center;margin-top:2px">Chưa tường nào có đồ. Chạm một tường để bắt đầu.</div>');
+  }
+  function tabWallElev(r, i) {
+    var e = r.edges[i]; if (!e) return '';
+    var L = e.mm, H = num(r.ceilingHeight);
+    var svg = '<svg class="elev" id="elev" viewBox="0 0 ' + EW + ' ' + EH + '" preserveAspectRatio="xMidYMid meet"></svg>';
+    var head = '<div class="muted" style="font-size:12.5px;margin:-2px 2px 10px">Tường ' + wallName(i) + ' — dài ' + L + 'mm' + (H ? ' · cao phòng ' + H + 'mm' : '') + '. Nhìn như đang đứng trước tường; góc A bên trái.</div>';
+    if (H == null) head += '<div class="card"><div class="banner warn" style="margin:0 0 10px">Chưa nhập chiều cao trần nên mặt đứng chưa đúng tỉ lệ (đang tạm dùng chiều cao ước lượng).</div><label style="margin-top:0">Chiều cao trần (mm)</label><input type="number" id="ceilw" value="" placeholder="VD: 2850" onchange="App.setCeiling(this.value)"></div>';
+    if (L != null && L < 200) head += '<div class="banner warn">Tường này chỉ <b>' + L + 'mm</b> (' + (L / 10) + 'cm) — rất hẹp nên mặt đứng nhìn như một vạch. Nếu gõ nhầm, quay lại tab Mặt bằng sửa số cạnh ' + wallName(i) + '.</div>';
+    var objs = wallObjs(r, i);
+    var list = objs.length ? '<div class="card"><h3>Đã đặt (' + objs.length + ') — số khớp trên hình, chạm để sửa</h3>' + objs.map(function (o, ix) { return objRow(o, ix + 1); }).join('') + '</div>' : '';
+    var block;
+    if (state.objId) {
+      block = objForm(r);            // đang sửa 1 vật: form lên trên, list ở dưới
+    } else {
+      var showPicker = state.addOpen || objs.length === 0;
+      var picker = '<div class="card"><h3>Thêm lên tường</h3><div class="picker">' +
+        Object.keys(KINDS).map(function (k) { return '<button onclick="App.pickObj(\'' + k + '\')"><span class="ic">' + KINDS[k].ic + '</span>' + KINDS[k].ten + '</button>'; }).join('') + '</div>' +
+        (objs.length ? '<button class="btn ghost small" style="margin-top:10px" onclick="App.closeAdd()">Đóng danh sách thêm</button>' : '') + '</div>';
+      block = showPicker ? picker : '<button class="btn ghost" onclick="App.openAdd()">+ Thêm đồ lên tường</button>';
+    }
+    var totalCard = wallTotalCard(r, i);
+    var np = notePhotoCard('Tường ' + wallName(i), 'wall', i);
+    var mid = state.objId ? (block + list) : (list + block); // list luôn ngay dưới hình
+    return svg + head + mid + totalCard + np;
+  }
+  function objRow(o, no) {
+    var meta = KINDS[o.kind] || CKINDS[o.kind] || { ten: o.kind, ic: '•' };
+    var ic = no ? '<span style="display:inline-block;min-width:22px;height:22px;line-height:22px;border-radius:50%;background:#38618c;color:#fff;font-size:12px;font-weight:700;text-align:center;font-family:' + MONO + '">' + no + '</span>' : meta.ic;
+    var parts = [];
+    if (o.fromA != null) parts.push('A ' + o.fromA);
+    if (o.w != null) parts.push('rộng ' + o.w);
+    if (o.oh != null) parts.push('cao vật ' + o.oh);
+    if (o.h != null) parts.push('sàn ' + o.h);
+    if (o.doorH != null) parts.push('cao cửa ' + o.doorH);
+    if (o.sill != null) parts.push('đáy ' + o.sill);
+    if (o.head != null) parts.push('đỉnh ' + o.head);
+    if (o.bottom != null) parts.push('đáy ' + o.bottom);
+    var warn = objWarn(o) ? ' <span class="warnDot">⚠</span>' : '';
+    var ph = (o.photos && o.photos.length) ? ' 📷' + o.photos.length : '';
+    return '<div class="obj" onclick="App.editObj(\'' + o.id + '\')"><div class="ic">' + ic + '</div>' +
+      '<div style="flex:1"><div class="t">' + esc(meta.ten) + (o.note ? ' · ' + esc(o.note) : '') + warn + '</div>' +
+      '<div class="s">' + (parts.join(' · ') || 'chưa có số') + ph + '</div></div><span class="chev">›</span></div>';
+  }
+  function objWarn(o) { // thiếu số quan trọng (kích thước vật w/oh là tuỳ chọn với thiết bị điểm)
+    var meta = KINDS[o.kind] || CKINDS[o.kind]; if (!meta || !meta.f) return false;
+    var pointStyle = meta.f.indexOf('oh') >= 0;
+    for (var i = 0; i < meta.f.length; i++) {
+      var f = meta.f[i];
+      if (f === 'toB') continue;
+      if (pointStyle && (f === 'w' || f === 'oh')) continue;
+      if (o[f] == null) return true;
+    }
+    return false;
+  }
+  function objForm(r) {
+    var o = (r.objects || []).find(function (x) { return x.id === state.objId; }); if (!o) return '';
+    var meta = KINDS[o.kind] || CKINDS[o.kind];
+    var fields = (meta.f || []).map(function (f) {
+      var v = o[f] != null ? o[f] : '';
+      return '<label>' + FIELD[f].lbl + '</label><input type="number" id="of-' + f + '" value="' + v + '" placeholder="' + FIELD[f].ph + '">';
+    }).join('');
+    var photos = o.photos || [];
+    var thumbs = photos.length ? '<div class="thumbs">' + photos.map(function (src, i) { return '<div class="tm"><img src="' + src + '"><span class="x" onclick="App.delObjPhoto(' + i + ')">✕</span></div>'; }).join('') + '</div>' : '';
+    return '<div class="card"><h3>' + meta.ic + ' ' + esc(meta.ten) + '</h3>' + fields +
+      '<label>Ghi chú</label><input type="text" id="of-note" value="' + esc(o.note || '') + '" placeholder="VD: Ổ TV">' +
+      '<label>Ảnh</label><input type="file" accept="image/*" capture="environment" onchange="App.objPhoto(event)">' + thumbs +
+      '<div class="toolrow" style="margin-top:12px">' +
+      '<button class="btn danger" onclick="App.delObj()">Xoá</button>' +
+      '<button class="btn accent" onclick="App.saveObj()">Lưu ✓</button></div></div>';
+  }
+  function wallTotalCard(r, i) {
+    var e = r.edges[i], L = e.mm;
+    // §22: nếu có vật có cả fromA và toB -> kiểm A + toB == L
+    var checks = wallObjs(r, i).filter(function (o) { return o.fromA != null && o.toB != null; }).map(function (o) {
+      var wv = num(o.w) || 0, sum = Number(o.fromA) + wv + Number(o.toB), diff = Math.round(Math.abs(sum - L));
+      var meta = KINDS[o.kind] || { ten: o.kind };
+      var expr = 'A→ ' + o.fromA + (wv ? ' + rộng ' + wv : '') + ' + →B ' + o.toB;
+      return '<div class="banner ' + (diff <= 10 ? 'info' : 'bad') + '" style="margin:6px 0">' + esc(meta.ten) + ': ' + expr + ' = <b>' + sum + '</b> vs tường <b>' + L + '</b> — lệch ' + diff + 'mm</div>';
+    }).join('');
+    var mt = e.total != null ? e.total : '';
+    var totalCheck = '';
+    if (num(e.total) != null) { var d = Math.round(Math.abs(num(e.total) - L)); totalCheck = '<div class="banner ' + (d <= 10 ? 'info' : 'bad') + '">Đo tổng lại <b>' + e.total + '</b> vs từ mặt bằng <b>' + L + '</b> — lệch ' + d + 'mm</div>'; }
+    return '<div class="card"><h3>Kiểm tổng (§16/§22)</h3>' +
+      '<div class="muted" style="font-size:12.5px">Dùng tổng của các đoạn để bắt lỗi cộng dồn. Nhập "cách góc B" khi thêm vật để tự kiểm.</div>' +
+      checks +
+      '<label>Đo lại tổng chiều dài tường (mm)</label><input type="number" id="wt" value="' + mt + '" placeholder="' + L + '" onchange="App.setWallTotal(' + i + ', this.value)">' +
+      totalCheck + '</div>';
+  }
+
+  // ---------- TAB: Trần ----------
+  function ceilObjs(r) { return (r.objects || []).filter(function (o) { return o.ceiling; }); }
+  function dpadHtml() {
+    function dbtn(d, sym) { return '<button onpointerdown="App.arrowDown(event,\'' + d + '\')" onpointerup="App.arrowUp()" onpointerleave="App.arrowUp()" onpointercancel="App.arrowUp()" oncontextmenu="return false">' + sym + '</button>'; }
+    return '<span class="sp"></span>' + dbtn('U', '↑') + '<span class="sp"></span>' + dbtn('L', '←') + '<span class="sp"></span>' + dbtn('R', '→') + '<span class="sp"></span>' + dbtn('D', '↓') + '<span class="sp"></span>';
+  }
+  // Hàng 1 mốc neo: tên mốc (đã chạm chọn hay chưa) + ô khoảng cách. Chạm hàng = "chờ" nhận cú chạm hình.
+  function slotRow(scope, ai, mi) {
+    var anchor = scope === 'zone' ? state.zAnc[ai] : (curCeil() && curCeil().anchor);
+    if (!anchor) return '';
+    var m = anchor.m[mi];
+    var armed = state.zSlot === mi && (scope === 'zone' ? state.zActive === ai : !state.zoneMode);
+    var name = m.set ? (m.ref === 'edge' ? 'Tường ' + wallName(m.idx) : 'Góc ' + letter(m.idx)) : 'Mốc ' + (mi + 1) + ' — chạm hình chọn';
+    var distH = scope === 'zone' ? "App.setZAnc(" + ai + "," + mi + ",'d',this.value)" : "App.setObjAnchor(" + mi + ",'d',this.value)";
+    var box = armed ? ';box-shadow:0 0 0 2px var(--accent);border-radius:11px' : '';
+    return '<div class="seg" style="margin-top:6px' + box + '">' +
+      '<button class="btn ghost small" style="flex:1;text-align:left;' + (m.set ? '' : 'color:var(--ink-3)') + '" onclick="App.armSlot(\'' + scope + '\',' + ai + ',' + mi + ')">' + (armed ? '▸ ' : '') + esc(name) + '</button>' +
+      '<input type="number" style="max-width:92px"' + (m.set ? '' : ' disabled') + ' placeholder="' + (m.set && m.ref === 'edge' ? '0=trên' : 'kc mm') + '" value="' + m.d + '" onchange="' + distH + '"></div>';
+  }
+  function tabCeiling(r) {
+    if (G.missingCount(r.edges) > 0) return '<div class="banner warn">Nhập đủ số mặt bằng trước — trần dùng lại chính đường bao phòng.</div>';
+    var svg = '<svg class="plan" id="plan" style="height:44vh;min-height:240px" viewBox="0 0 ' + VW + ' ' + VH + '" preserveAspectRatio="xMidYMid meet" onpointerdown="App.ceilTap(event)"></svg>';
+    // Chế độ vẽ viền vùng giật cấp bằng con rắn
+    if (state.zoneMode) {
+      function ancCard(idx) {
+        var A = state.zAnc[idx], done = idx < state.zonePts.length && state.zonePts[idx];
+        var bothSet = A.m[0].set && A.m[1].set, bothNum = num(A.m[0].d) != null && num(A.m[1].d) != null;
+        var warn = (bothSet && bothNum && !done) ? '<div class="banner bad" style="margin-top:8px">Hai mốc không giao nhau — sửa số hoặc bấm Đổi phía.</div>' : '';
+        var active = state.zActive === idx;
+        return '<div class="card"' + (active ? ' style="box-shadow:0 0 0 2px var(--accent-soft),var(--shadow)"' : '') + '><h3>Góc mảng ' + (idx + 1) + (done ? ' ✓' : '') + ' — chạm 2 mốc trên hình + điền số</h3>' +
+          slotRow('zone', idx, 0) + slotRow('zone', idx, 1) +
+          '<button class="btn ghost small" style="margin-top:8px" onclick="App.flipSide(' + idx + ')">Đổi phía</button>' + warn + '</div>';
+      }
+      var nA = state.zoneTwo ? 2 : 1, snaked = state.zonePts.length > nA;
+      var ready = state.zonePts.length >= nA && state.zonePts[0] && (nA < 2 || state.zonePts[1]);
+      var toggle = snaked ? '' : '<button class="btn ghost small" style="margin:2px 0 8px" onclick="App.zoneToggleTwo()">' + (state.zoneTwo ? '← Chỉ neo 1 góc' : '+ Neo thêm góc 2 (khoá hướng, chính xác hơn)') + '</button>';
+      var cards = ancCard(0) + (state.zoneTwo ? ancCard(1) : '');
+      var tail = ready
+        ? '<div class="hint">Đủ neo. Giữ mũi tên cho rắn bò vẽ nốt viền rồi Đóng vùng.</div>' +
+          '<div class="dpad">' + dpadHtml() + '</div>' +
+          '<div class="toolrow"><button class="btn ghost" onclick="App.snakeUndo()">↩ Lùi</button>' +
+          '<button class="btn ghost" onclick="App.snakeClear()">Vẽ lại viền</button>' +
+          '<button class="btn accent" onclick="App.zoneClose()">Đóng vùng ▸</button></div>'
+        : '<div class="banner info">Nhập ' + (nA === 2 ? '<b>2 góc mảng</b>' : '<b>1 góc mảng</b>') + ' (điểm neo hiện trên hình) rồi bò rắn vẽ viền.</div>';
+      return '<div class="hint">🪜 <b>Chạm 1 góc hoặc 1 cạnh trên hình</b> để chọn mốc (sáng lên), rồi điền khoảng cách. Đủ 2 mốc là ra điểm neo → bò rắn vẽ viền.</div>' +
+        svg + cards + toggle + tail +
+        '<button class="btn ghost" style="margin-top:8px" onclick="App.zoneCancel()">Huỷ vẽ vùng</button>';
+    }
+    var H = num(r.ceilingHeight);
+    var ceilCard = '<div class="card"><label style="margin-top:0">Chiều cao trần chung (mm)</label>' +
+      '<input type="number" id="ceil" value="' + (r.ceilingHeight || '') + '" placeholder="VD: 2850" onchange="App.setCeiling(this.value)">' +
+      (H ? '<div class="muted" style="font-size:12px;margin-top:6px">Dầm/vùng giật cấp thấp hơn sẽ tính "tụt xuống" so với ' + H + 'mm.</div>' : '') + '</div>';
+    var placing = state.ceilPlace
+      ? '<div class="banner info">👆 Chạm lên mặt bằng để đặt vị trí <b>' + esc(CKINDS[state.ceilPlace].ten) + '</b>.</div>' : '';
+    var zoneBtn = '<button class="btn ghost" onclick="App.zoneStart()">🪜 + Vùng giật cấp (vẽ viền)</button>';
+    // editor cao độ cho vùng đang chọn
+    var zoneEditor = '';
+    if (state.zoneSel) {
+      var z = (r.zones || []).find(function (x) { return x.id === state.zoneSel; });
+      if (z) {
+        var edgeList = (z.edges || []).map(function (e, ei) {
+          var hl = ei === state.zoneEdgeSel ? ' style="box-shadow:0 0 0 2px var(--accent)"' : '';
+          return '<div class="seg" style="margin-top:6px"><span style="flex:0 0 74px;align-self:center;font-size:12px;color:var(--ink-2)">Cạnh ' + (ei + 1) + ' (' + (e.axis === 'H' ? 'ngang' : 'dọc') + ')</span>' +
+            '<input type="number"' + hl + ' placeholder="~' + Math.round(e.len0) + ' (tương đối)" value="' + (e.mm != null ? e.mm : '') + '" onchange="App.setZoneEdge(' + ei + ', this.value)"></div>';
+        }).join('');
+        zoneEditor = '<div class="card"><h3>Vùng giật cấp đã chọn</h3>' +
+          '<label style="margin-top:0">Cao độ vùng (mm)</label><input type="number" value="' + (z.height || '') + '" placeholder="VD: 2600" onchange="App.setZoneHeight(this.value)">' +
+          (H && num(z.height) != null ? '<div class="muted" style="font-size:12px;margin-top:6px">Tụt <b>' + Math.round(H - num(z.height)) + 'mm</b> so với trần ' + H + 'mm.</div>' : '') +
+          (edgeList ? '<label>Số đo thật từng cạnh (để trống = tương đối theo nét vẽ)</label>' + edgeList : '') +
+          '<button class="btn danger" style="margin-top:12px" onclick="App.delZone()">Xoá vùng này</button></div>';
+      }
+    }
+    var zoneList = (r.zones && r.zones.length) ? '<div class="card"><h3>Vùng giật cấp (' + r.zones.length + ') — chạm hình hoặc dòng để chọn</h3>' +
+      r.zones.map(function (z, ix) {
+        var tut = (H && num(z.height) != null) ? ' · tụt ' + Math.round(H - num(z.height)) : '';
+        var ht = num(z.height) != null ? 'cao ' + z.height + tut : '<span style="color:var(--warn)">chưa có cao độ</span>';
+        return '<div class="obj" onclick="App.selZone(\'' + z.id + '\')"><div class="ic">🪜</div><div style="flex:1"><div class="t">Vùng ' + (ix + 1) + '</div><div class="s">' + ht + '</div></div><span class="chev">›</span></div>';
+      }).join('') + '</div>' : '';
+    var picker = '<div class="card"><h3>Thêm đồ lên trần</h3><div class="picker">' +
+      Object.keys(CKINDS).map(function (k) { return '<button onclick="App.pickCeil(\'' + k + '\')"><span class="ic">' + CKINDS[k].ic + '</span>' + CKINDS[k].ten + '</button>'; }).join('') + '</div></div>';
+    var objs = ceilObjs(r);
+    var list = objs.length ? '<div class="card"><h3>Trên trần (' + objs.length + ')</h3>' + objs.map(ceilRow).join('') + '</div>' : '';
+    var editing = state.objId ? '<div class="card">' + ceilEditInner(r) + '</div>' : '';
+    return ceilCard + placing + svg + zoneBtn + zoneEditor + zoneList + (editing || picker) + list;
+  }
+  function ceilEditInner(r) {
+    var o = (r.objects || []).find(function (x) { return x.id === state.objId; }); if (!o) return '';
+    var meta = CKINDS[o.kind] || { ten: o.kind, ic: '•' };
+    if (!o.anchor) o.anchor = freshZAnc(r)[0]; // tương thích đồ trần cũ (đặt bằng chạm)
+    var placed = solveAnchor(r, o.anchor);
+    var beamRow = meta.hasBottom ? '<label>Đáy dầm cách sàn (mm)</label><input type="number" value="' + (o.bottom != null ? o.bottom : '') + '" placeholder="VD: 2450" onchange="App.setObjNum(\'bottom\', this.value)">' : '';
+    var photos = o.photos || [];
+    var thumbs = photos.length ? '<div class="thumbs">' + photos.map(function (src, i) { return '<div class="tm"><img src="' + src + '"><span class="x" onclick="App.delObjPhoto(' + i + ')">✕</span></div>'; }).join('') + '</div>' : '';
+    return '<h3>' + meta.ic + ' ' + esc(meta.ten) + (placed ? ' ✓' : '') + '</h3>' +
+      '<div class="muted" style="font-size:12px;margin-bottom:2px">Vị trí TÂM — <b>chạm 2 mốc (góc/cạnh) trên hình</b> + điền khoảng cách:</div>' +
+      slotRow('obj', 0, 0) + slotRow('obj', 0, 1) +
+      '<button class="btn ghost small" style="margin-top:8px" onclick="App.flipObjSide()">Đổi phía</button>' +
+      (!placed && num(o.anchor.m[0].d) != null && num(o.anchor.m[1].d) != null ? '<div class="banner bad" style="margin-top:8px">2 số đo không giao — kiểm lại / Đổi phía.</div>' : '') +
+      '<label>Dài × Rộng (mm)</label><div class="seg"><input type="number" placeholder="dài" value="' + (o.len != null ? o.len : '') + '" onchange="App.setObjNum(\'len\', this.value)"><input type="number" placeholder="rộng" value="' + (o.w != null ? o.w : '') + '" onchange="App.setObjNum(\'w\', this.value)"></div>' +
+      beamRow +
+      '<label>Ghi chú</label><input type="text" id="of-note" value="' + esc(o.note || '') + '">' +
+      '<label>Ảnh</label><input type="file" accept="image/*" capture="environment" onchange="App.objPhoto(event)">' + thumbs +
+      '<div class="toolrow" style="margin-top:12px"><button class="btn danger" onclick="App.delObj()">Xoá</button>' +
+      '<button class="btn accent" onclick="App.saveObj()">Xong ✓</button></div>';
+  }
+  function ceilRow(o) {
+    var meta = CKINDS[o.kind] || { ten: o.kind, ic: '•' };
+    var s = [];
+    if (o.len != null && o.w != null) s.push(o.len + '×' + o.w);
+    if (o.bottom != null) { s.push('đáy ' + o.bottom); var H = num(room().ceilingHeight); if (H) s.push('tụt ' + Math.round(H - o.bottom)); }
+    var placed = o.anchor ? solveAnchor(room(), o.anchor) : o.pt;
+    if (!placed) s.push('<span style="color:var(--warn)">chưa đủ số vị trí</span>');
+    return '<div class="obj" onclick="App.editObj(\'' + o.id + '\')"><div class="ic">' + meta.ic + '</div>' +
+      '<div style="flex:1"><div class="t">' + esc(meta.ten) + (o.note ? ' · ' + esc(o.note) : '') + '</div>' +
+      '<div class="s">' + (s.join(' · ') || 'chưa có số') + '</div></div><span class="chev">›</span></div>';
+  }
+
+  // ---------- TAB: Kiểm tra trước khi về (§33) ----------
+  function tabCheck(r) {
+    var rows = [];
+    function add(ok, lbl, dt) { rows.push({ ok: ok, lbl: lbl, dt: dt }); }
+    add(r.edges.length >= 3, 'Khung mặt bằng', r.edges.length >= 3 ? r.edges.length + ' cạnh' : 'chưa vẽ hình');
+    var miss = G.missingCount(r.edges);
+    add(miss === 0, 'Kích thước cạnh', miss === 0 ? 'đủ ' + r.edges.length + ' cạnh' : 'còn ' + miss + ' cạnh chưa đo');
+    if (miss === 0) {
+      var res = G.rectilinearResidual(r.edges), b = G.closureBand(res);
+      add(b.level === 'good' || b.level === 'watch', 'Khép hình', 'lệch ' + Math.round(res) + 'mm · ' + b.nhan);
+      (r.diagonals || []).forEach(function (d) {
+        var calc = G.cornerDistance(r.edges, d.from, d.to), m = num(d.measured);
+        if (m != null) { var diff = Math.round(Math.abs(m - calc)); add(diff <= 15, 'Chéo ' + letter(d.from) + '→' + letter(d.to), 'lệch ' + diff + 'mm'); }
+      });
+    }
+    var H = num(r.ceilingHeight);
+    add(H != null, 'Chiều cao trần', H != null ? H + 'mm' : 'chưa nhập');
+    // từng tường
+    if (miss === 0) r.edges.forEach(function (e, i) {
+      var objs = wallObjs(r, i), bad = objs.filter(objWarn);
+      if (bad.length) add(false, 'Tường ' + wallName(i), bad.length + ' vật thiếu số');
+      // kiểm tổng lệch
+      objs.forEach(function (o) { if (o.fromA != null && o.toB != null) { var diff = Math.abs(Number(o.fromA) + (num(o.w) || 0) + Number(o.toB) - e.mm); if (diff > 10) add(false, 'Tường ' + wallName(i), (KINDS[o.kind] || {}).ten + ' lệch tổng ' + Math.round(diff) + 'mm'); } });
+    });
+    ceilObjs(r).forEach(function (o) {
+      if (o.kind === 'beam' && o.bottom == null) add(false, 'Trần', 'một dầm chưa có cao độ');
+      if (o.anchor && !solveAnchor(r, o.anchor)) add(false, 'Trần', (CKINDS[o.kind] || {}).ten + ' chưa đủ số vị trí');
+    });
+    (r.zones || []).forEach(function (z, ix) { if (num(z.height) == null) add(false, 'Trần', 'vùng giật cấp ' + (ix + 1) + ' chưa có cao độ'); });
+    var html = rows.map(function (x) {
+      return '<div class="chk ' + (x.ok ? 'ok' : 'warn') + '"><span class="m">' + (x.ok ? '●' : '▲') + '</span>' +
+        '<div><span class="lbl">' + esc(x.lbl) + '</span> — <span class="dt">' + esc(x.dt) + '</span></div></div>';
+    }).join('');
+    var warnN = rows.filter(function (x) { return !x.ok; }).length;
+    var top = warnN === 0
+      ? '<div class="status" style="background:var(--good)"><span class="n">✓</span><span class="lbl">Không thấy điểm cần chú ý — có thể rời công trình.</span></div>'
+      : '<div class="banner warn"><b>' + warnN + '</b> điểm cần chú ý trước khi về. App không cấm hoàn thành — chỉ nhắc.</div>';
+    var dxfBtn = miss === 0
+      ? '<button class="btn ghost" onclick="App.exportDXF()">⬇ Xuất DXF (mặt bằng + mặt đứng) cho AutoCAD/SketchUp</button>'
+      : '<div class="muted" style="font-size:12.5px;text-align:center;margin:4px 0 12px">Nhập đủ số mặt bằng để xuất được DXF.</div>';
+    return top + '<div class="card">' + html + '</div>' + dxfBtn + notePhotoCard(r.name, 'room', null);
+  }
+
+  // ---------- ghi chú + ảnh (§31-32) ----------
+  function notePhotoCard(title, scope, idx) {
+    var holder = scope === 'room' ? room() : room().edges[idx];
+    holder.photos = holder.photos || [];
+    var thumbs = holder.photos.length ? '<div class="thumbs">' + holder.photos.map(function (src, i) { return '<div class="tm"><img src="' + src + '"><span class="x" onclick="App.delScopePhoto(\'' + scope + '\',' + idx + ',' + i + ')">✕</span></div>'; }).join('') + '</div>' : '';
+    return '<div class="card"><h3>Ghi chú & ảnh — ' + esc(title) + '</h3>' +
+      '<input type="text" value="' + esc(holder.note || '') + '" placeholder="VD: tường bị ẩm" onchange="App.setScopeNote(\'' + scope + '\',' + idx + ', this.value)">' +
+      '<label>Ảnh</label><input type="file" accept="image/*" capture="environment" onchange="App.scopePhoto(event,\'' + scope + '\',' + idx + ')">' + thumbs + '</div>';
+  }
+
+  // ---------- ảnh: nén rồi lưu dataURL ----------
+  // Đọc các ô số/ghi chú đang hiện trong form về object (dùng trước khi render lại vì chụp ảnh).
+  function commitObjFields(o) {
+    var meta = (o.ceiling ? CKINDS[o.kind] : KINDS[o.kind]) || {};
+    (meta.f || []).forEach(function (f) { var el = document.getElementById('of-' + f); if (el) o[f] = num(el.value); });
+    var noteEl = document.getElementById('of-note'); if (noteEl) o.note = noteEl.value.trim();
+  }
+  function readPhoto(file, cb) {
+    if (!file) return;
+    var img = new Image(), url = URL.createObjectURL(file);
+    img.onload = function () {
+      var max = 1024, s = Math.min(1, max / Math.max(img.width, img.height));
+      var c = document.createElement('canvas'); c.width = Math.round(img.width * s); c.height = Math.round(img.height * s);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      try { cb(c.toDataURL('image/jpeg', 0.55)); } catch (e) { alert('Không đọc được ảnh.'); }
+    };
+    img.onerror = function () { alert('Không đọc được ảnh.'); };
+    img.src = url;
+  }
+
+  // ---------- vẽ mặt bằng ----------
+  var GRID = '<defs><pattern id="g" width="20" height="20" patternUnits="userSpaceOnUse">' +
+    '<path d="M20 0H0V20" fill="none" stroke="#ecebe8" stroke-width="1"/></pattern>' +
+    '<pattern id="g5" width="100" height="100" patternUnits="userSpaceOnUse">' +
+    '<path d="M100 0H0V100" fill="none" stroke="#e3e2de" stroke-width="1"/></pattern></defs>' +
+    '<rect width="' + VW + '" height="' + VH + '" fill="url(#g)"/><rect width="' + VW + '" height="' + VH + '" fill="url(#g5)"/>';
+  var MONO = 'ui-monospace,\'SF Mono\',Consolas,monospace';
+
+  function drawPlan() {
+    var r = room(); if (!r) return;
+    var svg = document.getElementById('plan'); if (!svg) return;
+    var s = GRID;
+    if (r.phase === 'sketch') {
+      var pts = r.sketchPts;
+      if (pts.length === 0) { svg.innerHTML = GRID + '<text x="' + (VW/2) + '" y="' + (VH/2 - 6) + '" text-anchor="middle" fill="#b7b7bb" font-size="12.5" font-family="system-ui">Chạm vào đây để đặt điểm bắt đầu,</text><text x="' + (VW/2) + '" y="' + (VH/2 + 12) + '" text-anchor="middle" fill="#b7b7bb" font-size="12.5" font-family="system-ui">rồi nhấn giữ mũi tên cho rắn bò</text>'; return; }
+      var head = snakeHead();
+      var showHead = head && Math.hypot(head.x - pts[pts.length-1].x, head.y - pts[pts.length-1].y) > 0.5;
+      var full = showHead ? pts.concat([head]) : pts;
+      var ps = full.map(function (p) { return p.x.toFixed(1) + ',' + p.y.toFixed(1); }).join(' ');
+      if (full.length >= 3) s += '<line x1="' + full[full.length-1].x.toFixed(1) + '" y1="' + full[full.length-1].y.toFixed(1) + '" x2="' + full[0].x.toFixed(1) + '" y2="' + full[0].y.toFixed(1) + '" stroke="#c8a24a" stroke-width="1.2" stroke-dasharray="4 4"/>';
+      s += '<polyline points="' + ps + '" fill="none" stroke="#33333a" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>';
+      for (var i = 0; i < pts.length; i++) s += '<circle cx="' + pts[i].x.toFixed(1) + '" cy="' + pts[i].y.toFixed(1) + '" r="' + (i === 0 ? 5 : 3.2) + '" fill="none" stroke="' + (i === 0 ? '#38618c' : '#9d9da3') + '" stroke-width="2"/>';
+      var hd = showHead ? head : pts[pts.length - 1];
+      s += '<circle cx="' + hd.x.toFixed(1) + '" cy="' + hd.y.toFixed(1) + '" r="7" fill="#38618c"/><circle cx="' + hd.x.toFixed(1) + '" cy="' + hd.y.toFixed(1) + '" r="3" fill="#fff"/>';
+      svg.innerHTML = s; return;
+    }
+    var edges = r.edges, complete = G.allMeasured(edges);
+    var verts = G.buildVertsLive(edges);
+    var T = G.fitTransformScreen(verts, VW, VH, 42);
+    var sp = verts.map(T);
+    var mode = state.tab; // 'plan' | 'walls' | 'ceiling'
+    var interactive = (mode === 'plan' || mode === 'walls');
+    var clickFn = mode === 'walls' ? 'App.openWall' : 'App.selEdge';
+    s += '<polygon points="' + sp.slice(0, edges.length).map(function (p) { return p.x.toFixed(1) + ',' + p.y.toFixed(1); }).join(' ') + '" fill="rgba(56,97,140,.05)" stroke="none"/>';
+    for (var e = 0; e < edges.length; e++) {
+      var a = sp[e], b = sp[e + 1], eg = edges[e];
+      var hasObj = mode === 'walls' && wallObjs(r, e).length > 0;
+      var sel = mode === 'plan' && e === state.selEdge;
+      var col = sel ? '#38618c' : (eg.mm == null ? '#bf5340' : (hasObj ? '#38618c' : '#33333a'));
+      var w = (sel || hasObj) ? 3.6 : 2.4, dash = eg.mm == null ? ' stroke-dasharray="6 4"' : '';
+      s += '<line x1="' + a.x.toFixed(1) + '" y1="' + a.y.toFixed(1) + '" x2="' + b.x.toFixed(1) + '" y2="' + b.y.toFixed(1) + '" stroke="' + col + '" stroke-width="' + w + '"' + dash + ' stroke-linecap="round"/>';
+      if (interactive) s += '<line x1="' + a.x.toFixed(1) + '" y1="' + a.y.toFixed(1) + '" x2="' + b.x.toFixed(1) + '" y2="' + b.y.toFixed(1) + '" stroke="#000" stroke-width="32" stroke-opacity="0" style="pointer-events:stroke;cursor:pointer" onclick="event.stopPropagation();' + clickFn + '(' + e + ')"/>';
+    }
+    if (complete) { var res = G.rectilinearResidual(edges); if (res > 1) s += '<line x1="' + sp[sp.length-1].x.toFixed(1) + '" y1="' + sp[sp.length-1].y.toFixed(1) + '" x2="' + sp[0].x.toFixed(1) + '" y2="' + sp[0].y.toFixed(1) + '" stroke="#bf5340" stroke-width="1.8" stroke-dasharray="4 3"/>'; }
+    for (var m = 0; m < edges.length; m++) {
+      var mid = { x: (sp[m].x + sp[m + 1].x) / 2, y: (sp[m].y + sp[m + 1].y) / 2 };
+      var none = edges[m].mm == null, txt = none ? '?' : String(edges[m].mm);
+      var tc = none ? '#bf5340' : '#2c2c30', bw = none ? 24 : (14 + txt.length * 8);
+      var hitW = Math.max(bw + 16, 44);
+      if (interactive) s += '<rect x="' + (mid.x - hitW / 2).toFixed(1) + '" y="' + (mid.y - 15).toFixed(1) + '" width="' + hitW + '" height="30" fill="#fff" fill-opacity="0" pointer-events="all" style="cursor:pointer" onclick="event.stopPropagation();' + clickFn + '(' + m + ')"/>';
+      s += '<rect x="' + (mid.x - bw / 2).toFixed(1) + '" y="' + (mid.y - 10).toFixed(1) + '" width="' + bw + '" height="20" rx="6" fill="#ffffff" stroke="' + (none ? '#ecccc4' : '#e7e6e2') + '" stroke-width="1" style="pointer-events:none"/>' +
+        '<text x="' + mid.x.toFixed(1) + '" y="' + (mid.y + 4).toFixed(1) + '" text-anchor="middle" font-size="11.5" font-weight="600" font-family="' + MONO + '" fill="' + tc + '" style="pointer-events:none">' + txt + '</text>';
+      if (mode === 'walls') { var no = wallObjs(r, m).length; if (no) s += '<circle cx="' + (mid.x + bw / 2 + 9).toFixed(1) + '" cy="' + (mid.y - 9).toFixed(1) + '" r="8" fill="#38618c" style="pointer-events:none"/><text x="' + (mid.x + bw / 2 + 9).toFixed(1) + '" y="' + (mid.y - 5.5).toFixed(1) + '" text-anchor="middle" font-size="10" font-weight="700" font-family="' + MONO + '" fill="#fff" style="pointer-events:none">' + no + '</text>'; }
+    }
+    for (var v = 0; v < edges.length; v++) {
+      s += '<circle cx="' + sp[v].x.toFixed(1) + '" cy="' + sp[v].y.toFixed(1) + '" r="3" fill="#38618c" style="pointer-events:none"/>' +
+        '<text x="' + (sp[v].x + 7).toFixed(1) + '" y="' + (sp[v].y - 7).toFixed(1) + '" font-size="10.5" font-weight="600" font-family="' + MONO + '" fill="#9d9da3" style="pointer-events:none">' + letter(v) + '</text>';
+    }
+    svg.innerHTML = s;
+  }
+
+  // Đổi mm<->pixel trên mặt bằng trần (dùng cùng phép fit như drawPlan: pad 42).
+  // "left/top" = khoảng cách tới MÉP TRÁI / MÉP TRÊN của đường bao phòng (mm). 0 = nằm trên tường đó.
+  function ceilTransform(r) {
+    var verts = G.buildVertsLive(r.edges), bb = G.boundingBox(verts), T = G.fitTransformScreen(verts, VW, VH, 42);
+    var o0 = T({ x: bb.minX, y: bb.minY }), o1 = T({ x: bb.minX + 100, y: bb.minY + 100 });
+    var sx = (o1.x - o0.x) / 100 || 0.1, sy = (o1.y - o0.y) / 100 || 0.1;
+    return {
+      verts: verts, leftPx: o0.x, topPx: o0.y, scale: (Math.abs(sx) + Math.abs(sy)) / 2,
+      mmToPx: function (p) { return { x: o0.x + (p.x - bb.minX) * sx, y: o0.y + (p.y - bb.minY) * sy }; }
+    };
+  }
+  function freshZAnc(r) {
+    var b = r.edges.length > 1 ? 1 : 0;
+    function mk() { return { m: [{ ref: 'corner', idx: 0, d: '', set: false }, { ref: 'corner', idx: b, d: '', set: false }], side: 1 }; }
+    return [mk(), mk()];
+  }
+  // Diện tích có dấu -> chiều quay đa giác (để biết phía TRONG của mỗi cạnh, đúng cả phòng lõm chữ L).
+  function polyArea2(verts, n) { var s = 0; for (var i = 0; i < n; i++) { var a = verts[i], b = verts[(i + 1) % n]; s += a.x * b.y - b.x * a.y; } return s; }
+  // Đường thẳng cho ràng buộc CẠNH: song song cạnh e, lùi vào phía TRONG d (d=0 = trên cạnh).
+  // Phía trong xác định theo winding (pháp tuyến trái/phải tuỳ chiều quay), KHÔNG theo trọng tâm.
+  function edgeLine(verts, n, e, d, sign) {
+    var A = verts[e], B = verts[(e + 1) % n], ux = B.x - A.x, uy = B.y - A.y, L = Math.hypot(ux, uy) || 1;
+    ux /= L; uy /= L;
+    var nx = sign > 0 ? -uy : uy, ny = sign > 0 ? ux : -ux;
+    return { p: { x: A.x + d * nx, y: A.y + d * ny }, dir: { x: ux, y: uy } };
+  }
+  function anchorConstr(verts, n, sign, m) {
+    var d = num(m.d);
+    if (m.ref === 'edge') return { kind: 'line', line: edgeLine(verts, n, m.idx, d, sign) };
+    return { kind: 'circle', C: verts[m.idx], r: d };
+  }
+  function anchorCandidates(c1, c2) {
+    if (c1.kind === 'circle' && c2.kind === 'circle') {
+      return [G.triangulate(c1.C, c2.C, c1.r, c2.r, 1), G.triangulate(c1.C, c2.C, c1.r, c2.r, -1)].filter(Boolean);
+    }
+    if (c1.kind === 'line' && c2.kind === 'line') { var p = G.lineLineIntersect(c1.line.p, c1.line.dir, c2.line.p, c2.line.dir); return p ? [p] : []; }
+    var ln = c1.kind === 'line' ? c1 : c2, cir = c1.kind === 'line' ? c2 : c1;
+    return G.lineCircleIntersect(ln.line.p, ln.line.dir, cir.C, cir.r);
+  }
+  // Giải 1 điểm neo -> toạ độ MM (cùng hệ với buildVertsLive); null nếu thiếu số / không giao.
+  function solveAnchorMM(r, A) {
+    if (!A || !A.m) return null;
+    if (!A.m[0].set || !A.m[1].set) return null;
+    if (num(A.m[0].d) == null || num(A.m[1].d) == null) return null;
+    var verts = G.buildVertsLive(r.edges), n = r.edges.length, sign = polyArea2(verts, n);
+    var cands = anchorCandidates(anchorConstr(verts, n, sign, A.m[0]), anchorConstr(verts, n, sign, A.m[1]));
+    if (!cands.length) return null;
+    cands.sort(function (p, q) { return (p.x - q.x) || (p.y - q.y); });
+    return A.side >= 0 ? cands[0] : (cands[1] || cands[0]);
+  }
+  function solveAnchor(r, A) { var m = solveAnchorMM(r, A); return m ? ceilTransform(r).mmToPx(m) : null; }
+  function computeAnchorPt(r, idx) { return solveAnchor(r, state.zAnc[idx]); }
+  // Dựng đỉnh (px) của 1 vùng đã lưu: bắt đầu tại điểm neo (mm) rồi áp từng cạnh (mm nếu có, không thì len0).
+  function zoneVertsPx(r, z) {
+    if (!z.edges || !z.start) return (z.pts || []).map(function (p) { return { x: p.x, y: p.y }; }); // vùng cũ
+    var start = (z.anchors && solveAnchorMM(r, z.anchors[0])) || z.start;
+    var pts = [{ x: start.x, y: start.y }];
+    z.edges.forEach(function (e) {
+      var L = e.mm != null ? Number(e.mm) : e.len0, last = pts[pts.length - 1];
+      pts.push(e.axis === 'H' ? { x: last.x + e.sign * L, y: last.y } : { x: last.x, y: last.y + e.sign * L });
+    });
+    var tr = ceilTransform(r);
+    return pts.slice(0, z.edges.length).map(function (p) { return tr.mmToPx(p); });
+  }
+  // Đặt lại các điểm neo đầu của zonePts theo zAnc (1 hoặc 2 góc); giữ đuôi rắn sau các neo.
+  function recomputeAnchors(r) {
+    var nA = state.zoneTwo ? 2 : 1, pts = [];
+    for (var i = 0; i < nA; i++) { var p = computeAnchorPt(r, i); if (p) pts.push({ x: p.x, y: p.y }); else break; }
+    var tail = state.zonePts.slice(nA);
+    state.zonePts = pts.concat(pts.length >= nA ? tail : []);
+  }
+
+  // ---------- vẽ trần (mặt bằng + vùng giật cấp + marker đồ trần) ----------
+  function drawCeiling() {
+    var r = room(); if (!r) return;
+    var svg = document.getElementById('plan'); if (!svg) return;
+    drawPlan(); // vẽ nền mặt bằng (không interactive vì tab != plan)
+    var extra = '';
+    var tr = ceilTransform(r);
+    // đường gióng (mờ, đứt) từ 1 điểm neo tới mốc của mỗi số đo + số
+    var nEdge = r.edges.length;
+    function dimLine(p, q, val) {
+      return '<line x1="' + p.x.toFixed(1) + '" y1="' + p.y.toFixed(1) + '" x2="' + q.x.toFixed(1) + '" y2="' + q.y.toFixed(1) + '" stroke="#c9a86a" stroke-width="1" stroke-dasharray="3 3" style="pointer-events:none"/>' +
+        '<text x="' + ((p.x + q.x) / 2).toFixed(1) + '" y="' + ((p.y + q.y) / 2 - 2).toFixed(1) + '" text-anchor="middle" font-size="8.5" font-family="' + MONO + '" fill="#a8863f" style="pointer-events:none">' + Math.round(val) + '</text>';
+    }
+    function triDim(p, anc) {
+      if (!anc || !anc.m) return '';
+      var g = '';
+      anc.m.forEach(function (m) {
+        var d = num(m.d); if (d == null) return;
+        if (m.ref === 'edge') { // vẽ vuông góc từ điểm tới đường tường
+          var Ap = tr.mmToPx(tr.verts[m.idx]), Bp = tr.mmToPx(tr.verts[(m.idx + 1) % nEdge]);
+          var ux = Bp.x - Ap.x, uy = Bp.y - Ap.y, L2 = ux * ux + uy * uy || 1;
+          var t = ((p.x - Ap.x) * ux + (p.y - Ap.y) * uy) / L2, foot = { x: Ap.x + t * ux, y: Ap.y + t * uy };
+          g += dimLine(p, foot, d);
+        } else {
+          if (!tr.verts[m.idx]) return;
+          g += dimLine(p, tr.mmToPx(tr.verts[m.idx]), d);
+        }
+      });
+      return g;
+    }
+    // vùng giật cấp đã lưu — NÉT MỜ/ĐỨT để phân biệt với đường bao hiện trạng (đậm)
+    (r.zones || []).forEach(function (z, ix) {
+      var vp = zoneVertsPx(r, z); if (vp.length < 3) return;
+      var ps = vp.map(function (p) { return p.x.toFixed(1) + ',' + p.y.toFixed(1); }).join(' ');
+      var selz = z.id === state.zoneSel;
+      extra += '<polygon points="' + ps + '" fill="rgba(176,131,40,' + (selz ? 0.20 : 0.09) + ')" stroke="' + (selz ? '#8a6414' : '#c9a86a') + '" stroke-width="' + (selz ? 2.2 : 1.3) + '"' + (selz ? '' : ' stroke-dasharray="6 4"') + ' style="cursor:pointer" onclick="event.stopPropagation();App.selZone(\'' + z.id + '\')"/>';
+      if (selz) {
+        if (z.anchors) z.anchors.forEach(function (an, k) { if (vp[k]) extra += triDim(vp[k], an); });
+        if (z.edges) for (var ei = 0; ei < z.edges.length; ei++) { var a = vp[ei], b = vp[(ei + 1) % vp.length], eg = z.edges[ei]; var none = eg.mm == null, mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }; var txt = none ? Math.round(eg.len0) + '?' : String(eg.mm); extra += '<rect x="' + (mid.x - 15).toFixed(1) + '" y="' + (mid.y - 8).toFixed(1) + '" width="30" height="16" rx="4" fill="#fff" stroke="' + (none ? '#ecccc4' : '#e7e6e2') + '" stroke-width="1" style="cursor:pointer" onclick="event.stopPropagation();App.selZoneEdge(' + ei + ')"/><text x="' + mid.x.toFixed(1) + '" y="' + (mid.y + 3.5).toFixed(1) + '" text-anchor="middle" font-size="9" font-family="' + MONO + '" fill="' + (none ? '#bf5340' : '#8a6414') + '" style="pointer-events:none">' + txt + '</text>'; }
+      }
+      var cx = 0, cy = 0; vp.forEach(function (p) { cx += p.x; cy += p.y; }); cx /= vp.length; cy /= vp.length;
+      extra += '<text x="' + cx.toFixed(1) + '" y="' + (cy - 1).toFixed(1) + '" text-anchor="middle" font-size="11.5" font-weight="700" font-family="' + MONO + '" fill="#8a6414" style="pointer-events:none">' + (num(z.height) != null ? z.height : '?') + '</text>' +
+        '<text x="' + cx.toFixed(1) + '" y="' + (cy + 11).toFixed(1) + '" text-anchor="middle" font-size="8" font-family="system-ui" fill="#8a6414" style="pointer-events:none">vùng ' + (ix + 1) + '</text>';
+    });
+    // đồ trần: vị trí = neo 2 số đo; vẽ ô dài×rộng (nếu có) + đường gióng
+    ceilObjs(r).forEach(function (o) {
+      var pt = o.anchor ? solveAnchor(r, o.anchor) : (o.pt || null);
+      if (!pt) return; o.pt = pt;
+      var meta = CKINDS[o.kind] || { ic: '•' }, sel = o.id === state.objId;
+      var L = num(o.len), W = num(o.w), col = sel ? '#204163' : '#38618c';
+      if (L > 0 && W > 0) {
+        var wpx = L * tr.scale, hpx = W * tr.scale;
+        extra += '<rect x="' + (pt.x - wpx / 2).toFixed(1) + '" y="' + (pt.y - hpx / 2).toFixed(1) + '" width="' + wpx.toFixed(1) + '" height="' + hpx.toFixed(1) + '" fill="' + (sel ? 'rgba(56,97,140,.16)' : 'rgba(56,97,140,.08)') + '" stroke="' + col + '" stroke-width="1.6" style="cursor:pointer" onclick="event.stopPropagation();App.editObj(\'' + o.id + '\')"/>' +
+          '<text x="' + pt.x.toFixed(1) + '" y="' + (pt.y + 5).toFixed(1) + '" text-anchor="middle" font-size="13" fill="' + col + '" style="pointer-events:none">' + meta.ic + '</text>';
+      } else {
+        extra += '<circle cx="' + pt.x.toFixed(1) + '" cy="' + pt.y.toFixed(1) + '" r="13" fill="' + (sel ? '#38618c' : '#fff') + '" stroke="#38618c" stroke-width="1.6" style="cursor:pointer" onclick="event.stopPropagation();App.editObj(\'' + o.id + '\')"/>' +
+          '<text x="' + pt.x.toFixed(1) + '" y="' + (pt.y + 5).toFixed(1) + '" text-anchor="middle" font-size="14" fill="' + (sel ? '#fff' : '#38618c') + '" style="pointer-events:none">' + meta.ic + '</text>';
+      }
+      if (sel && o.anchor) extra += triDim(pt, o.anchor);
+    });
+    // vùng đang vẽ bằng con rắn
+    if (state.zoneMode && state.zonePts.length) {
+      var nAz = state.zoneTwo ? 2 : 1;
+      for (var ia = 0; ia < nAz; ia++) if (state.zonePts[ia]) extra += triDim(state.zonePts[ia], state.zAnc[ia]);
+      var lp = state.zonePts[state.zonePts.length - 1];
+      var hd = snake.legDir ? { x: lp.x + SDIR[snake.legDir].x * snake.legLen, y: lp.y + SDIR[snake.legDir].y * snake.legLen } : lp;
+      var show = Math.hypot(hd.x - lp.x, hd.y - lp.y) > 0.5;
+      var full = show ? state.zonePts.concat([hd]) : state.zonePts;
+      var ps2 = full.map(function (p) { return p.x.toFixed(1) + ',' + p.y.toFixed(1); }).join(' ');
+      if (full.length >= 3) extra += '<line x1="' + full[full.length - 1].x.toFixed(1) + '" y1="' + full[full.length - 1].y.toFixed(1) + '" x2="' + full[0].x.toFixed(1) + '" y2="' + full[0].y.toFixed(1) + '" stroke="#c8a24a" stroke-width="1.2" stroke-dasharray="4 4"/>';
+      extra += '<polyline points="' + ps2 + '" fill="none" stroke="#b08328" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/>';
+      for (var i = 0; i < state.zonePts.length; i++) extra += '<circle cx="' + state.zonePts[i].x.toFixed(1) + '" cy="' + state.zonePts[i].y.toFixed(1) + '" r="' + (i === 0 ? 5 : 3.2) + '" fill="none" stroke="' + (i === 0 ? '#8a6414' : '#c8a24a') + '" stroke-width="2"/>';
+      extra += '<circle cx="' + hd.x.toFixed(1) + '" cy="' + hd.y.toFixed(1) + '" r="7" fill="#b08328"/><circle cx="' + hd.x.toFixed(1) + '" cy="' + hd.y.toFixed(1) + '" r="3" fill="#fff"/>';
+    }
+    // lớp CHẠM chọn mốc: hiện khi đang đặt neo (vẽ vùng HOẶC sửa đồ trần) — chạm góc/cạnh = sáng lên rồi điền số
+    var AA = activeAnchor();
+    if (AA) {
+      var picked = function (kind, i) { return AA.m.some(function (m) { return m.set && m.ref === kind && m.idx === i; }); };
+      var vpx = []; for (var vi = 0; vi < nEdge; vi++) vpx.push(tr.mmToPx(tr.verts[vi]));
+      for (var ei2 = 0; ei2 < nEdge; ei2++) { // cạnh: nét sáng nếu đã chọn + đường chạm vô hình dày
+        var a2 = vpx[ei2], b2 = vpx[(ei2 + 1) % nEdge];
+        if (picked('edge', ei2)) extra += '<line x1="' + a2.x.toFixed(1) + '" y1="' + a2.y.toFixed(1) + '" x2="' + b2.x.toFixed(1) + '" y2="' + b2.y.toFixed(1) + '" stroke="var(--accent)" stroke-width="4.5" stroke-linecap="round" style="pointer-events:none"/>';
+        extra += '<line x1="' + a2.x.toFixed(1) + '" y1="' + a2.y.toFixed(1) + '" x2="' + b2.x.toFixed(1) + '" y2="' + b2.y.toFixed(1) + '" stroke="transparent" stroke-width="20" pointer-events="stroke" style="cursor:pointer" onclick="event.stopPropagation();App.pickRef(\'edge\',' + ei2 + ')"/>';
+      }
+      for (var ci = 0; ci < nEdge; ci++) { // góc: chấm sáng nếu đã chọn + vòng chạm vô hình (vẽ SAU cạnh để ưu tiên khi chạm gần góc)
+        var c2 = vpx[ci], onc = picked('corner', ci);
+        extra += '<circle cx="' + c2.x.toFixed(1) + '" cy="' + c2.y.toFixed(1) + '" r="' + (onc ? 6.5 : 4.5) + '" fill="' + (onc ? 'var(--accent)' : '#fff') + '" stroke="var(--accent)" stroke-width="2" style="pointer-events:none"/>' +
+          '<circle cx="' + c2.x.toFixed(1) + '" cy="' + c2.y.toFixed(1) + '" r="16" fill="transparent" pointer-events="all" style="cursor:pointer" onclick="event.stopPropagation();App.pickRef(\'corner\',' + ci + ')"/>';
+      }
+    }
+    svg.innerHTML = svg.innerHTML + extra;
+  }
+
+  // ---------- vẽ mặt đứng tường ----------
+  function drawElev(i) {
+    var r = room(), e = r.edges[i]; if (!e) return;
+    var svg = document.getElementById('elev'); if (!svg) return;
+    var L = e.mm, hasH = num(r.ceilingHeight) != null;
+    var H = hasH ? num(r.ceilingHeight) : Math.max(2400, L);
+    var padX = 30, padTop = 22, padBot = 36;
+    var availW = EW - 2 * padX, availH = EH - padTop - padBot;
+    var scale = Math.min(availW / L, availH / H);
+    var drawW = L * scale, drawH = H * scale;
+    var ox = (EW - drawW) / 2, floorY = EH - padBot, ceilY = floorY - drawH;
+    function X(mm) { return ox + mm * scale; }
+    function Y(mm) { return floorY - mm * scale; } // mm cao từ sàn
+    var s = '<rect width="' + EW + '" height="' + EH + '" fill="#fbfbfa"/>';
+    // ô tường (viền trên nét đứt khi chưa biết cao trần)
+    s += '<rect x="' + ox.toFixed(1) + '" y="' + ceilY.toFixed(1) + '" width="' + drawW.toFixed(1) + '" height="' + drawH.toFixed(1) + '" fill="#fff" stroke="#d8d7d3" stroke-width="1.4"/>';
+    if (!hasH) s += '<line x1="' + ox.toFixed(1) + '" y1="' + ceilY.toFixed(1) + '" x2="' + (ox + drawW).toFixed(1) + '" y2="' + ceilY.toFixed(1) + '" stroke="#c19a3a" stroke-width="1.6" stroke-dasharray="5 4"/>';
+    // sàn
+    s += '<line x1="' + (ox - 12).toFixed(1) + '" y1="' + floorY.toFixed(1) + '" x2="' + (ox + drawW + 12).toFixed(1) + '" y2="' + floorY.toFixed(1) + '" stroke="#33333a" stroke-width="3"/>';
+    for (var hh = 0; hh < 6; hh++) { var hx = ox - 10 + hh * (drawW + 20) / 5; s += '<line x1="' + hx.toFixed(1) + '" y1="' + floorY.toFixed(1) + '" x2="' + (hx - 5).toFixed(1) + '" y2="' + (floorY + 5).toFixed(1) + '" stroke="#b7b7bb" stroke-width="1"/>'; }
+    s += '<text x="' + (ox + drawW + 14).toFixed(1) + '" y="' + (floorY + 13).toFixed(1) + '" font-size="8.5" font-family="system-ui" fill="#9d9da3">SÀN</text>';
+    // nhãn góc (ngay trên sàn, hai đầu)
+    s += '<text x="' + (ox + 2).toFixed(1) + '" y="' + (floorY - 5).toFixed(1) + '" font-size="11" font-weight="700" font-family="' + MONO + '" fill="#38618c">' + letter(i) + '</text>';
+    s += '<text x="' + (ox + drawW - 2).toFixed(1) + '" y="' + (floorY - 5).toFixed(1) + '" text-anchor="end" font-size="11" font-weight="700" font-family="' + MONO + '" fill="#38618c">' + letter((i + 1) % r.edges.length) + '</text>';
+    // kích thước: DÀI dưới sàn, CAO bên trái
+    s += '<text x="' + (ox + drawW / 2).toFixed(1) + '" y="' + (floorY + 24).toFixed(1) + '" text-anchor="middle" font-size="10.5" font-weight="600" font-family="' + MONO + '" fill="#6b6b71">dài ' + L + '</text>';
+    var hy = (ceilY + floorY) / 2, hlbl = hasH ? ('cao ' + H) : 'cao ?';
+    s += '<text x="16" y="' + hy.toFixed(1) + '" text-anchor="middle" font-size="10.5" font-weight="600" font-family="' + MONO + '" fill="' + (hasH ? '#6b6b71' : '#b08328') + '" transform="rotate(-90 16 ' + hy.toFixed(1) + ')">' + hlbl + '</text>';
+    function tx(px, py, str, anchor, col) { return '<text x="' + px.toFixed(1) + '" y="' + py.toFixed(1) + '" text-anchor="' + (anchor || 'middle') + '" font-size="8.5" font-family="' + MONO + '" fill="' + (col || '#6b6b71') + '" style="pointer-events:none">' + str + '</text>'; }
+    function guide(px) { return '<line x1="' + px.toFixed(1) + '" y1="' + floorY.toFixed(1) + '" x2="' + px.toFixed(1) + '" y2="' + (floorY - 5).toFixed(1) + '" stroke="#38618c" stroke-width="1"/>'; }
+    // Badge số (khớp danh sách) — luôn hiện; chi tiết chỉ hiện khi vật được chọn -> hình không rối.
+    function badge(px, py, k, on) { return '<circle cx="' + px.toFixed(1) + '" cy="' + py.toFixed(1) + '" r="8" fill="' + (on ? '#204163' : '#38618c') + '" style="pointer-events:none"/><text x="' + px.toFixed(1) + '" y="' + (py + 3.2).toFixed(1) + '" text-anchor="middle" font-size="10" font-weight="700" font-family="' + MONO + '" fill="#fff" style="pointer-events:none">' + k + '</text>'; }
+    var LC = '#38618c';
+    wallObjs(r, i).forEach(function (o, idx) {
+      var no = idx + 1, sel = o.id === state.objId;
+      var stroke = sel ? '#38618c' : '#c4703a', fillc = sel ? 'rgba(56,97,140,.18)' : 'rgba(196,112,58,.12)';
+      if (o.kind === 'door') {
+        var x = X(o.fromA || 0), w = (o.w || 0) * scale, top = Y(o.doorH || H);
+        s += '<rect x="' + x.toFixed(1) + '" y="' + top.toFixed(1) + '" width="' + w.toFixed(1) + '" height="' + (floorY - top).toFixed(1) + '" fill="' + fillc + '" stroke="' + stroke + '" stroke-width="1.6"/>';
+        s += badge(x + 11, top + 12, no, sel);
+        if (sel) s += tx(x + w / 2, top - 5, 'A' + (o.fromA != null ? o.fromA : '?') + ' R' + (o.w != null ? o.w : '?') + ' C' + (o.doorH != null ? o.doorH : '?'), 'middle', LC);
+      } else if (o.kind === 'window' || o.kind === 'niche') {
+        var x2 = X(o.fromA || 0), w2 = (o.w || 0) * scale, yb = Y(o.sill != null ? o.sill : o.bottom || 0), yt = Y(o.head != null ? o.head : o.top || H);
+        s += '<rect x="' + x2.toFixed(1) + '" y="' + yt.toFixed(1) + '" width="' + w2.toFixed(1) + '" height="' + (yb - yt).toFixed(1) + '" fill="' + fillc + '" stroke="' + stroke + '" stroke-width="1.6"/>';
+        s += badge(x2 + 11, yt + 12, no, sel);
+        if (sel) { var lo = o.sill != null ? o.sill : o.bottom, hi = o.head != null ? o.head : o.top;
+          s += tx(x2 + w2 / 2, yt - 5, 'A' + (o.fromA != null ? o.fromA : '?') + ' R' + (o.w != null ? o.w : '?') + ' ' + (lo != null ? lo : '?') + '–' + (hi != null ? hi : '?'), 'middle', LC); }
+      } else if (o.kind === 'beam') {
+        var yb2 = Y(o.bottom != null ? o.bottom : H);
+        s += '<rect x="' + ox.toFixed(1) + '" y="' + ceilY.toFixed(1) + '" width="' + drawW.toFixed(1) + '" height="' + (yb2 - ceilY).toFixed(1) + '" fill="rgba(107,107,113,.14)" stroke="' + stroke + '" stroke-width="1.4"/>';
+        s += badge(ox + 12, (ceilY + yb2) / 2, no, sel);
+        if (sel) s += tx(ox + drawW / 2, (ceilY + yb2) / 2 + 3, 'đáy ' + (o.bottom != null ? o.bottom : '?'), 'middle', LC);
+      } else {
+        var ow = num(o.w), ooh = num(o.oh), xL = X(o.fromA || 0), yb = Y(o.h || 0);
+        if (ow > 0 && ooh > 0) {
+          var wpx = ow * scale, yt = Y((o.h || 0) + ooh), cxm = xL + wpx / 2;
+          if (sel) s += guide(cxm);
+          s += '<rect x="' + xL.toFixed(1) + '" y="' + yt.toFixed(1) + '" width="' + wpx.toFixed(1) + '" height="' + (yb - yt).toFixed(1) + '" fill="' + fillc + '" stroke="' + stroke + '" stroke-width="1.6"/>';
+          s += badge(cxm, yt - 11, no, sel);
+          if (sel) s += tx(cxm, yb + 13, 'A' + (o.fromA != null ? o.fromA : '?') + ' R' + ow + ' C' + ooh + ' sàn' + (o.h != null ? o.h : '?'), 'middle', LC);
+        } else {
+          var cy = yb;
+          if (sel) s += guide(xL);
+          s += '<rect x="' + (xL - 7).toFixed(1) + '" y="' + (cy - 7).toFixed(1) + '" width="14" height="14" rx="3" fill="' + (sel ? '#38618c' : '#fff') + '" stroke="' + stroke + '" stroke-width="1.6"/>';
+          s += badge(xL, cy - 15, no, sel);
+          if (sel) s += tx(xL, cy + 18, 'A' + (o.fromA != null ? o.fromA : '?') + ' sàn' + (o.h != null ? o.h : '?'), 'middle', LC);
+        }
+      }
+    });
+    svg.innerHTML = s;
+  }
+
+  // ---------- snake helpers ----------
+  function evtPt(evt) {
+    var svg = document.getElementById('plan'), r = svg.getBoundingClientRect();
+    return { x: (evt.clientX - r.left) / r.width * VW, y: (evt.clientY - r.top) / r.height * VH };
+  }
+  // Con rắn dùng chung cho: vẽ khung phòng (mode 'sketch') VÀ vẽ viền vùng giật cấp trần (mode 'zone').
+  function ptsFor() { if (snake.mode === 'zone') return state.zonePts; var r = room(); return r ? r.sketchPts : []; }
+  function snakeValid() { if (snake.mode === 'zone') return state.tab === 'ceiling' && state.zoneMode; var r = room(); return !!r && r.phase === 'sketch'; }
+  function snakeDraw() { if (snake.mode === 'zone') drawCeiling(); else drawPlan(); }
+  function snakeHead() {
+    var pts = ptsFor(); if (!pts.length) return null;
+    var lv = pts[pts.length - 1];
+    if (!snake.legDir) return { x: lv.x, y: lv.y };
+    var v = SDIR[snake.legDir];
+    return { x: lv.x + v.x * snake.legLen, y: lv.y + v.y * snake.legLen };
+  }
+  function stopSnake() { if (snake.raf) { cancelAnimationFrame(snake.raf); snake.raf = null; } snake.last = 0; snake.activeDir = null; }
+  function snakeStep(t) {
+    if (!snake.activeDir || !snake.legDir || !snakeValid()) { snake.raf = null; return; }
+    var pts = ptsFor(); if (!pts.length) { snake.raf = null; return; }
+    if (!snake.last) snake.last = t;
+    var dt = Math.min(0.05, (t - snake.last) / 1000); snake.last = t;
+    var delta = SPEED * dt;
+    if (snake.activeDir === snake.legDir) snake.legLen += delta;
+    else if (snake.activeDir === OPP[snake.legDir]) snake.legLen = Math.max(0, snake.legLen - delta);
+    var lv = pts[pts.length - 1], v = SDIR[snake.legDir];
+    var hx = lv.x + v.x * snake.legLen, hy = lv.y + v.y * snake.legLen;
+    var cx = Math.max(10, Math.min(VW - 10, hx)), cy = Math.max(10, Math.min(VH - 10, hy));
+    if (cx !== hx || cy !== hy) snake.legLen = Math.hypot(cx - lv.x, cy - lv.y);
+    snakeDraw();
+    snake.raf = requestAnimationFrame(snakeStep);
+  }
+
+  return {
+    go: go, back: back,
+    openProject: function (id) { state.projectId = id; go('project'); },
+    openRoom: function (id) {
+      state.roomId = id; state.tab = 'plan'; state.selEdge = null; state.pendingVal = '';
+      state.wallIdx = null; state.objId = null; state.objKind = null; state.ceilPlace = null;
+      state.zoneMode = false; state.zonePts = []; state.zoneSel = null;
+      stopSnake(); snake.legDir = null; snake.legLen = 0; snake.mode = 'sketch';
+      var r = room();
+      if (r && !r.phase) { r.phase = 'sketch'; r.sketchPts = r.sketchPts || []; r.edges = r.edges || []; delete r.segments; }
+      if (r) { r.objects = r.objects || []; r.diagonals = r.diagonals || []; r.photos = r.photos || []; r.zones = r.zones || []; }
+      save(); go('room');
+    },
+    createProject: function () {
+      var name = (document.getElementById('f-name').value || '').trim();
+      if (!name) { alert('Nhập tên công trình.'); return; }
+      var p = { id: uid(), name: name, customer: document.getElementById('f-customer').value.trim(),
+        address: document.getElementById('f-address').value.trim(), surveyDate: document.getElementById('f-date').value,
+        surveyor: document.getElementById('f-surveyor').value.trim(), rooms: [] };
+      data.projects.unshift(p); save(); state.projectId = p.id; go('project');
+    },
+    addRoom: function () {
+      var name = prompt('Tên phòng (VD: Phòng khách):'); if (!name) return;
+      var r = { id: uid(), name: name.trim(), ceilingHeight: '', phase: 'sketch', sketchPts: [], edges: [], objects: [], diagonals: [], photos: [], zones: [] };
+      proj().rooms.push(r); save(); state.roomId = r.id; state.tab = 'plan'; state.selEdge = null; state.pendingVal = ''; go('room');
+    },
+    setTab: function (t) { stopSnake(); state.tab = t; state.selEdge = null; state.pendingVal = ''; state.wallIdx = null; state.objId = null; state.objKind = null; state.ceilPlace = null; state.addOpen = false; state.zoneMode = false; state.zonePts = []; state.zoneSel = null; snake.mode = 'sketch'; render(); },
+
+    // sketch
+    planTap: function (evt) {
+      var r = room(); if (!r || r.phase !== 'sketch' || r.sketchPts.length) return;
+      var p = evtPt(evt); r.sketchPts = [{ x: p.x, y: p.y }];
+      snake.legDir = null; snake.legLen = 0; save(); drawPlan();
+    },
+    arrowDown: function (evt, d) {
+      try { evt.preventDefault(); } catch (e) {}
+      if (!snakeValid()) return;
+      var pts = ptsFor();
+      if (!pts.length) { pts.push({ x: Math.round(VW * 0.30), y: Math.round(VH * 0.34) }); }
+      if (!snake.legDir) { snake.legDir = d; snake.legLen = 0; }
+      else if (d === snake.legDir || d === OPP[snake.legDir]) { /* cùng trục */ }
+      else { if (snake.legLen > 3) { var h = snakeHead(); pts.push({ x: h.x, y: h.y }); } snake.legDir = d; snake.legLen = 0; }
+      snake.activeDir = d;
+      var on = document.querySelectorAll('.dpad button.on'); for (var i = 0; i < on.length; i++) on[i].classList.remove('on');
+      try { evt.currentTarget.classList.add('on'); } catch (e) {}
+      snake.last = 0; if (!snake.raf) snake.raf = requestAnimationFrame(snakeStep);
+    },
+    arrowUp: function () { stopSnake(); var on = document.querySelectorAll('.dpad button.on'); for (var i = 0; i < on.length; i++) on[i].classList.remove('on'); if (snake.mode !== 'zone') save(); },
+    snakeUndo: function () {
+      stopSnake(); var pts = ptsFor(); var floor = snake.mode === 'zone' ? (state.zoneTwo ? 2 : 1) : 1; // zone: giữ các góc neo
+      if (snake.legLen > 3) { snake.legLen = 0; }
+      else if (pts.length > floor) { pts.pop(); snake.legDir = null; snake.legLen = 0; }
+      else if (snake.mode !== 'zone') { room().sketchPts = []; snake.legDir = null; snake.legLen = 0; }
+      else { snake.legDir = null; snake.legLen = 0; }
+      if (snake.mode !== 'zone') save(); snakeDraw();
+    },
+    snakeClear: function () { stopSnake(); if (snake.mode === 'zone') state.zonePts = state.zonePts.slice(0, state.zoneTwo ? 2 : 1); else { room().sketchPts = []; save(); } snake.legDir = null; snake.legLen = 0; snakeDraw(); },
+    snakeClose: function () {
+      stopSnake(); var r = room();
+      if (snake.legLen > 3) { var h = snakeHead(); r.sketchPts.push({ x: h.x, y: h.y }); }
+      snake.legDir = null; snake.legLen = 0;
+      if (r.sketchPts.length < 3) { alert('Kéo cho rắn bò ít nhất 3 cạnh (rẽ ≥2 góc) rồi hãy đóng hình.'); return; }
+      r.edges = G.cleanEdges(G.orthogonalize(r.sketchPts)); r.phase = 'edit'; state.tab = 'plan';
+      state.selEdge = G.missingCount(r.edges) ? 0 : null; state.pendingVal = ''; save(); render();
+    },
+    backToSketch: function () {
+      var r = room();
+      if (G.missingCount(r.edges) < r.edges.length && !confirm('Vẽ lại hình sẽ xoá các số & vật đã nhập trên tường. Tiếp tục?')) return;
+      stopSnake(); r.phase = 'sketch'; r.edges = []; r.sketchPts = []; r.objects = []; r.diagonals = [];
+      snake.legDir = null; snake.legLen = 0; state.selEdge = null; save(); render();
+    },
+
+    // plan edit
+    selEdge: function (i) { state.selEdge = i; var e = room().edges[i]; state.pendingVal = e.mm != null ? String(e.mm) : ''; render(); },
+    deselect: function () { state.selEdge = null; state.pendingVal = ''; render(); },
+    key: function (k) {
+      if (state.selEdge == null) return;
+      if (k === '⌫') state.pendingVal = state.pendingVal.slice(0, -1);
+      else if (k === '.') { if (state.pendingVal.indexOf('.') < 0 && state.pendingVal) state.pendingVal += '.'; }
+      else if (state.pendingVal.length < 7) state.pendingVal += k;
+      var v = parseFloat(state.pendingVal);
+      room().edges[state.selEdge].mm = (state.pendingVal !== '' && v > 0) ? v : null;
+      save(); render();
+    },
+    clearEdge: function () { room().edges[state.selEdge].mm = null; state.pendingVal = ''; save(); render(); },
+    setCeiling: function (v) { room().ceilingHeight = v; save(); render(); },
+    addDiag: function () {
+      var r = room(); var f = +document.getElementById('dg-from').value, t = +document.getElementById('dg-to').value, m = document.getElementById('dg-m').value;
+      if (f === t) { alert('Chọn hai góc khác nhau.'); return; }
+      r.diagonals.push({ from: f, to: t, measured: m }); save(); render();
+    },
+    delDiag: function (i) { room().diagonals.splice(i, 1); save(); render(); },
+
+    // walls
+    openWall: function (i) { state.wallIdx = i; state.objId = null; state.addOpen = false; render(); },
+    openAdd: function () { state.addOpen = true; render(); },
+    closeAdd: function () { state.addOpen = false; render(); },
+    pickObj: function (k) { // chạm loại = tạo vật ngay rồi mở form sửa (luồng thống nhất, chụp ảnh được ngay)
+      var r = room(), o = { id: uid(), kind: k, wall: state.wallIdx, photos: [] };
+      r.objects.push(o); state.objId = o.id; state.addOpen = false; save(); render();
+    },
+    editObj: function (id) { state.objId = id; state.ceilPlace = null; render(); },
+    saveObj: function () {
+      var r = room(), o = r.objects.find(function (x) { return x.id === state.objId; }); if (!o) return;
+      commitObjFields(o); o.photos = o.photos || [];
+      state.objId = null; state.addOpen = false; save(); render();
+    },
+    delObj: function () {
+      var r = room(); r.objects = r.objects.filter(function (o) { return o.id !== state.objId; });
+      state.objId = null; state.addOpen = false; save(); render();
+    },
+    objPhoto: function (evt) {
+      var f = evt.target.files && evt.target.files[0]; if (!f) return;
+      var o = room().objects.find(function (x) { return x.id === state.objId; }); if (!o) return;
+      commitObjFields(o); // giữ số đang gõ trước khi render lại
+      readPhoto(f, function (src) { o.photos = o.photos || []; o.photos.push(src); save(); render(); });
+    },
+    delObjPhoto: function (i) { var o = room().objects.find(function (x) { return x.id === state.objId; }); if (o) { o.photos.splice(i, 1); save(); render(); } },
+    setWallTotal: function (i, v) { room().edges[i].total = num(v); save(); render(); },
+
+    // ceiling — đồ trần: neo vị trí bằng 2 số đo (Góc/Cạnh) + dài×rộng như đồ tường
+    pickCeil: function (k) {
+      var r = room();
+      var o = { id: uid(), kind: k, ceiling: true, anchor: freshZAnc(r)[0], len: null, w: null, photos: [] };
+      r.objects.push(o); state.objId = o.id; state.zoneSel = null; state.zSlot = 0; save(); render();
+    },
+    ceilTap: function () { /* không đặt bằng chạm nữa — đồ trần & vùng đều neo bằng số đo */ },
+    setObjAnchor: function (mi, f, v) { var o = curCeil(); if (!o || !o.anchor) return; var m = o.anchor.m[mi]; if (f === 'idx') m.idx = Number(v); else m[f] = v; save(); render(); },
+    flipObjSide: function () { var o = curCeil(); if (o && o.anchor) { o.anchor.side = -(o.anchor.side || 1); save(); render(); } },
+    setObjNum: function (f, v) { var o = curCeil(); if (o) { o[f] = num(v); save(); render(); } },
+    // vùng giật cấp (§28) — vẽ viền bằng con rắn
+    zoneStart: function () { stopSnake(); state.zoneMode = true; state.zoneTwo = false; state.zoneSel = null; state.ceilPlace = null; state.objId = null; state.zonePts = []; state.zAnc = freshZAnc(room()); state.zActive = 0; state.zSlot = 0; snake.mode = 'zone'; snake.legDir = null; snake.legLen = 0; render(); },
+    zoneToggleTwo: function () { state.zoneTwo = !state.zoneTwo; recomputeAnchors(room()); render(); },
+    // Chạm 1 GÓC hoặc 1 CẠNH trên hình -> gán làm mốc đang chờ (zSlot) của neo đang định nghĩa.
+    pickRef: function (kind, idx) {
+      var A = activeAnchor(); if (!A) return;
+      var m = A.m[state.zSlot]; m.ref = kind; m.idx = idx; m.set = true;
+      if (state.zoneMode) recomputeAnchors(room());
+      state.zSlot = 1 - state.zSlot; // tự chuyển sang mốc còn lại
+      save(); render();
+    },
+    armSlot: function (scope, ai, mi) { if (scope === 'zone') state.zActive = ai; state.zSlot = mi; render(); },
+    zoneCancel: function () { stopSnake(); state.zoneMode = false; state.zonePts = []; snake.mode = 'sketch'; render(); },
+    setZAnc: function (idx, mi, f, v) { var m = state.zAnc[idx].m[mi]; if (f === 'idx') m.idx = Number(v); else m[f] = v; recomputeAnchors(room()); render(); },
+    flipSide: function (idx) { state.zAnc[idx].side = -(state.zAnc[idx].side || 1); recomputeAnchors(room()); render(); },
+    zoneClose: function () {
+      stopSnake();
+      if (snake.legLen > 3) { var h = snakeHead(); if (h) state.zonePts.push({ x: h.x, y: h.y }); }
+      snake.legDir = null; snake.legLen = 0;
+      if (state.zonePts.length < 3) { alert('Cần neo góc mảng + vẽ viền cho đủ ≥3 điểm rồi hãy đóng.'); return; }
+      var r = room();
+      var oedges = G.cleanEdges(G.orthogonalize(state.zonePts));
+      var scale = ceilTransform(r).scale || 0.1;
+      var edges = oedges.map(function (e) { return { axis: e.axis, sign: e.sign, len0: e.len0 / scale, mm: null }; });
+      var used = JSON.parse(JSON.stringify(state.zoneTwo ? state.zAnc : [state.zAnc[0]]));
+      var startMM = solveAnchorMM(r, used[0]);
+      if (state.zoneTwo && edges.length) { var a0 = solveAnchorMM(r, used[0]), a1 = solveAnchorMM(r, used[1]); if (a0 && a1) edges[0].mm = Math.round(Math.hypot(a1.x - a0.x, a1.y - a0.y)); }
+      r.zones = r.zones || [];
+      var z = { id: uid(), height: '', anchors: used, start: startMM, edges: edges };
+      r.zones.push(z); state.zoneMode = false; state.zonePts = []; snake.mode = 'sketch'; state.zoneSel = z.id; save(); render();
+    },
+    selZone: function (id) { state.zoneSel = id; state.zoneEdgeSel = null; state.objId = null; state.ceilPlace = null; render(); },
+    selZoneEdge: function (ei) { state.zoneEdgeSel = ei; render(); },
+    setZoneEdge: function (ei, v) { var z = (room().zones || []).find(function (x) { return x.id === state.zoneSel; }); if (z && z.edges[ei]) { z.edges[ei].mm = num(v); save(); render(); } },
+    setZoneHeight: function (v) { var z = (room().zones || []).find(function (x) { return x.id === state.zoneSel; }); if (z) { z.height = v; save(); render(); } },
+    delZone: function () { var r = room(); r.zones = (r.zones || []).filter(function (x) { return x.id !== state.zoneSel; }); state.zoneSel = null; save(); render(); },
+
+    // note+photo theo scope (room / wall)
+    setScopeNote: function (scope, idx, v) { var h = scope === 'room' ? room() : room().edges[idx]; h.note = v.trim(); save(); },
+    scopePhoto: function (evt, scope, idx) {
+      var f = evt.target.files && evt.target.files[0]; if (!f) return;
+      var h = scope === 'room' ? room() : room().edges[idx];
+      readPhoto(f, function (src) { h.photos = h.photos || []; h.photos.push(src); save(); render(); });
+    },
+    delScopePhoto: function (scope, idx, i) { var h = scope === 'room' ? room() : room().edges[idx]; h.photos.splice(i, 1); save(); render(); },
+
+    exportDXF: function () {
+      var r = room(), p = proj(); if (!r || !p) return;
+      if (G.missingCount(r.edges) > 0) { alert('Nhập đủ số các cạnh mặt bằng trước khi xuất DXF.'); return; }
+      var s = window.DXF && window.DXF.roomToDXF(r, G);
+      if (!s) { alert('Chưa xuất được (thiếu dữ liệu mặt bằng).'); return; }
+      var name = (p.name + '-' + r.name).replace(/[^\w\-]+/g, '_');
+      var blob = new Blob([s], { type: 'application/dxf' });
+      var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name + '.dxf'; a.click();
+    },
+    exportJSON: function () {
+      var blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      var a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'khao-sat-' + today() + '.json'; a.click();
+    },
+    importJSON: function () {
+      var inp = document.createElement('input'); inp.type = 'file'; inp.accept = '.json,application/json';
+      inp.onchange = function () { var f = inp.files[0]; if (!f) return; var rd = new FileReader();
+        rd.onload = function () { try { var d = JSON.parse(rd.result); if (!d.projects) throw 0;
+          if (confirm('Nhập sẽ THAY dữ liệu hiện tại (' + data.projects.length + ' công trình). Tiếp tục?')) { data = d; save(); go('home'); }
+        } catch (e) { alert('File JSON không hợp lệ.'); } }; rd.readAsText(f); };
+      inp.click();
+    }
+  };
+})();
+document.addEventListener('DOMContentLoaded', function () {
+  App.go('home');
+  if (location.protocol.indexOf('http') === 0) {
+    var lk = document.createElement('link'); lk.rel = 'manifest'; lk.href = 'manifest.json'; document.head.appendChild(lk);
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function () {});
+  }
+});
+</script>
+</body>
+</html>

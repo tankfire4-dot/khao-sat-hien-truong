@@ -1,0 +1,14 @@
+{
+  "name": "Khảo sát hiện trường",
+  "short_name": "Khảo sát",
+  "description": "Đo hiện trạng, dựng mặt bằng, phát hiện sai số trước khi rời công trình.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f4f4f5",
+  "theme_color": "#404042",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
